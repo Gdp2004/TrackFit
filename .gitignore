@@ -1,0 +1,40 @@
+# ===== NODE MODULES (non pushare mai, usa npm install per ripristinare) =====
+node_modules/
+
+# ===== NEXT.JS BUILD OUTPUT =====
+.next/
+out/
+
+# ===== VARIABILI D'AMBIENTE (contengono segreti!) =====
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ===== SUPABASE LOCAL =====
+.supabase/
+
+# ===== TYPESCRIPT BUILD =====
+*.tsbuildinfo
+next-env.d.ts
+
+# ===== LOG =====
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# ===== MISC =====
+.vercel
+*.pem
