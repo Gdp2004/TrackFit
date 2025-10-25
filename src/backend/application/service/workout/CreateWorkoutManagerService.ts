@@ -1,14 +1,14 @@
-// ============================================================
+﻿// ============================================================
 // CreateWorkoutManagerService
 // Application layer – implements WorkoutManagementPort (UC3)
 // Source: SDD section 3.2 / section 4.1 (Facade + Hexagonal)
 // ============================================================
 
-import { WorkoutManagementPort } from "@/domain/port/in/WorkoutManagementPort";
-import { WorkoutRepositoryPort } from "@/domain/port/out/WorkoutRepositoryPort";
-import { NotificationServicePort } from "@/domain/port/out/NotificationServicePort";
-import { Workout } from "@/domain/model/types";
-import { WorkoutStatoEnum } from "@/domain/model/enums";
+import { WorkoutManagementPort } from "@/backend/domain/port/in/WorkoutManagementPort";
+import { WorkoutRepositoryPort } from "@/backend/domain/port/out/WorkoutRepositoryPort";
+import { NotificationServicePort } from "@/backend/domain/port/out/NotificationServicePort";
+import { Workout } from "@/backend/domain/model/types";
+import { WorkoutStatoEnum } from "@/backend/domain/model/enums";
 
 export class CreateWorkoutManagerService implements WorkoutManagementPort {
     constructor(

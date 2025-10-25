@@ -1,10 +1,10 @@
-// ============================================================
+﻿// ============================================================
 // Port/in – WorkoutManagementPort
 // Inbound use-case interface (Hexagonal Architecture)
 // Source: SDD section 3.2
 // ============================================================
 
-import { Workout } from "@/domain/model/types";
+import { Workout } from "@/backend/domain/model/types";
 
 export interface WorkoutManagementPort {
     /**

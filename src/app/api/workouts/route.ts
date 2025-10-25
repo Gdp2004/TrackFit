@@ -1,4 +1,4 @@
-// ============================================================
+﻿// ============================================================
 // POST/GET /api/workouts
 // Next.js 15 Route Handler (App Router) – port/in REST adapter
 // Source: SDD section 3.2 – WorkoutManagement
@@ -6,9 +6,9 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { CreateWorkoutManagerService } from "@/application/service/workout/CreateWorkoutManagerService";
-import { WorkoutSupabaseAdapter } from "@/infrastructure/adapter/out/supabase/WorkoutSupabaseAdapter";
-import { NotificationServiceAdapter } from "@/infrastructure/adapter/out/notification/NotificationServiceAdapter";
+import { CreateWorkoutManagerService } from "@/backend/application/service/workout/CreateWorkoutManagerService";
+import { WorkoutSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/WorkoutSupabaseAdapter";
+import { NotificationServiceAdapter } from "@/backend/infrastructure/adapter/out/notification/NotificationServiceAdapter";
 
 // Dependency injection (manual wiring – no IoC container)
 function buildService() {
