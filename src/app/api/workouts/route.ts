@@ -8,12 +8,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { CreateWorkoutManagerService } from "@/backend/application/service/workout/CreateWorkoutManagerService";
 import { WorkoutSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/WorkoutSupabaseAdapter";
-import { NotificationServiceAdapter } from "@/backend/infrastructure/adapter/out/notification/NotificationServiceAdapter";
+import { SupabaseRealtimeNotificationAdapter } from "@/backend/infrastructure/adapter/out/notification/SupabaseRealtimeNotificationAdapter";
 
 // Dependency injection (manual wiring – no IoC container)
 function buildService() {
     const workoutRepo = new WorkoutSupabaseAdapter();
-    const notificationService = new NotificationServiceAdapter();
+    const notificationService = new SupabaseRealtimeNotificationAdapter();
     return new CreateWorkoutManagerService(workoutRepo, notificationService);
 }
 

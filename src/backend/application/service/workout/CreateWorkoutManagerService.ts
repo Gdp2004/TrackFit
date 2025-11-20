@@ -7,13 +7,15 @@
 import { WorkoutManagementPort } from "@/backend/domain/port/in/WorkoutManagementPort";
 import { WorkoutRepositoryPort } from "@/backend/domain/port/out/WorkoutRepositoryPort";
 import { NotificationServicePort } from "@/backend/domain/port/out/NotificationServicePort";
+import { StorageLocalePort } from "@/backend/domain/port/out/StorageLocalePort";
 import { Workout } from "@/backend/domain/model/types";
 import { WorkoutStatoEnum } from "@/backend/domain/model/enums";
 
 export class CreateWorkoutManagerService implements WorkoutManagementPort {
     constructor(
         private readonly workoutRepo: WorkoutRepositoryPort,
-        private readonly notificationService: NotificationServicePort
+        private readonly notificationService: NotificationServicePort,
+        private readonly storageLocale?: StorageLocalePort
     ) { }
 
     async pianificaSessione(
@@ -66,6 +68,37 @@ export class CreateWorkoutManagerService implements WorkoutManagementPort {
 
     async sincronizzaSessione(workoutId: string): Promise<void> {
         await this.workoutRepo.update(workoutId, { stato: WorkoutStatoEnum.CONSOLIDATA });
+    }
+
+    async avviaSessione(workoutId: string): Promise<Workout> {
+        return this.workoutRepo.update(workoutId, { stato: WorkoutStatoEnum.IN_CORSO });
+    }
+
+    async salvaSnapshot(workoutId: string, datiRimasti: Record<string, unknown>): Promise<void> {
+        if (!this.storageLocale) return;
+        // Crash recovery UC4
+        const workout = await this.workoutRepo.findById(workoutId);
+        if (workout) {
+            this.storageLocale.salva(workoutId, { ...workout, percezionesSforzo: 0, note: JSON.stringify(datiRimasti) });
+        }
+    }
+
+    async importaAttivitaEsterna(userId: string, source: string, externalId: string, data: Partial<Workout>): Promise<Workout> {
+        // UC5 External Import Deduplication
+        const esistenti = await this.workoutRepo.findByUserId(userId);
+        const duplicato = esistenti.find(w => w.stravaId === externalId);
+        if (duplicato) throw new Error("Attività già importata nel sistema.");
+
+        return this.workoutRepo.save({
+            ...data,
+            userId,
+            tipo: data.tipo ?? "ALTRO",
+            dataOra: data.dataOra ?? new Date().toISOString(),
+            durata: data.durata ?? 0,
+            stato: WorkoutStatoEnum.CONSOLIDATA, // Already completed externally
+            sorgente: "IMPORT",
+            stravaId: externalId
+        });
     }
 
     async getSessioniUtente(userId: string): Promise<Workout[]> {
