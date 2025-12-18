@@ -1,0 +1,239 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── TrackFit Design Tokens ───────────────────────────── */
+:root {
+    --tf-primary: 220 90% 56%;
+    /* indigo-500 hsl */
+    --tf-primary-dark: 230 70% 40%;
+    --tf-accent: 158 64% 52%;
+    /* emerald-400 */
+    --tf-danger: 4 86% 58%;
+    /* red-500 */
+    --tf-warning: 38 92% 50%;
+    /* amber-500 */
+
+    --tf-bg: 222 47% 11%;
+    /* slate-900 */
+    --tf-surface: 217 33% 17%;
+    /* slate-800 */
+    --tf-surface-2: 215 28% 22%;
+    /* slate-700 */
+    --tf-border: 215 20% 30%;
+    --tf-text: 210 40% 96%;
+    --tf-text-muted: 215 20% 65%;
+
+    --tf-radius: 12px;
+    --tf-radius-sm: 8px;
+    --tf-shadow: 0 4px 24px 0 rgba(0, 0, 0, .35);
+    --tf-shadow-lg: 0 8px 40px 0 rgba(0, 0, 0, .5);
+    --tf-transition: .18s cubic-bezier(.4, 0, .2, 1);
+}
+
+/* ─── Base ──────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: hsl(var(--tf-bg));
+    color: hsl(var(--tf-text));
+}
+
+body {
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Scrollbar ─────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: hsl(var(--tf-surface));
+}
+
+::-webkit-scrollbar-thumb {
+    background: hsl(var(--tf-border));
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--tf-text-muted));
+}
+
+/* ─── Utility classes ───────────────────────────────────── */
+.tf-card {
+    background: hsl(var(--tf-surface));
+    border: 1px solid hsl(var(--tf-border));
+    border-radius: var(--tf-radius);
+    box-shadow: var(--tf-shadow);
+    transition: box-shadow var(--tf-transition), transform var(--tf-transition);
+}
+
+.tf-card:hover {
+    box-shadow: var(--tf-shadow-lg);
+    transform: translateY(-2px);
+}
+
+.tf-glass {
+    background: rgba(255, 255, 255, .05);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, .1);
+    border-radius: var(--tf-radius);
+}
+
+.tf-input {
+    width: 100%;
+    background: hsl(var(--tf-surface-2));
+    border: 1px solid hsl(var(--tf-border));
+    border-radius: var(--tf-radius-sm);
+    padding: .625rem 1rem;
+    color: hsl(var(--tf-text));
+    font-size: .875rem;
+    transition: border-color var(--tf-transition), box-shadow var(--tf-transition);
+    outline: none;
+}
+
+.tf-input::placeholder {
+    color: hsl(var(--tf-text-muted));
+}
+
+.tf-input:focus {
+    border-color: hsl(var(--tf-primary));
+    box-shadow: 0 0 0 3px hsl(var(--tf-primary)/.2);
+}
+
+.tf-input.error {
+    border-color: hsl(var(--tf-danger));
+}
+
+.tf-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .5rem;
+    font-weight: 600;
+    border-radius: var(--tf-radius-sm);
+    transition: all var(--tf-transition);
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+}
+
+.tf-btn:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.tf-btn-primary {
+    background: hsl(var(--tf-primary));
+    color: #fff;
+}
+
+.tf-btn-primary:hover:not(:disabled) {
+    filter: brightness(1.1);
+    transform: translateY(-1px);
+}
+
+.tf-btn-ghost {
+    background: transparent;
+    color: hsl(var(--tf-text-muted));
+    border: 1px solid hsl(var(--tf-border));
+}
+
+.tf-btn-ghost:hover:not(:disabled) {
+    background: hsl(var(--tf-surface-2));
+    color: hsl(var(--tf-text));
+}
+
+/* ─── Status badge colours ──────────────────────────────── */
+.badge-pianificata {
+    background: hsl(38 92% 50%/.15);
+    color: hsl(38 92% 65%);
+}
+
+.badge-in_corso {
+    background: hsl(142 70% 45%/.15);
+    color: hsl(142 70% 55%);
+}
+
+.badge-consolidata {
+    background: hsl(220 90% 56%/.15);
+    color: hsl(220 90% 70%);
+}
+
+.badge-interrotta {
+    background: hsl(4 86% 58%/.15);
+    color: hsl(4 86% 70%);
+}
+
+.badge-in_pausa {
+    background: hsl(280 70% 60%/.15);
+    color: hsl(280 70% 72%);
+}
+
+/* ─── Animations ────────────────────────────────────────── */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: .5;
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn .3s ease forwards;
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+.animate-pulse {
+    animation: pulse 2s ease-in-out infinite;
+}
+
+/* ─── Recharts overrides ────────────────────────────────── */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+    stroke: hsl(var(--tf-border));
+}
+
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+    background: hsl(var(--tf-surface)) !important;
+    border-color: hsl(var(--tf-border)) !important;
+    border-radius: var(--tf-radius-sm) !important;
+    color: hsl(var(--tf-text)) !important;
+}

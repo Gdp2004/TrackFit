@@ -1,21 +1,33 @@
-﻿import { Struttura } from "@backend/domain/model/types";
-import { Card } from "@frontend/components/ui/Card";
+﻿import { Badge } from "@frontend/components/ui/Badge";
+import type { Struttura } from "@backend/domain/model/types";
 
-interface GymCardProps { struttura: Struttura; }
+interface GymCardProps { struttura: Struttura; corsiCount?: number; }
 
-export function GymCard({ struttura }: GymCardProps) {
+export function GymCard({ struttura, corsiCount }: GymCardProps) {
+  const isAttiva = struttura.stato === "Attiva";
   return (
-    <Card className="hover:shadow-xl transition-shadow">
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="font-bold text-gray-900 text-lg">{struttura.denominazione}</p>
-          <p className="text-sm text-gray-500">ðŸ“ {struttura.indirizzo}</p>
+    <div className="tf-card">
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "1rem" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.375rem" }}>
+            <p style={{ fontWeight: 800, fontSize: "1rem", color: "hsl(var(--tf-text))" }}>
+              {struttura.denominazione}
+            </p>
+            <Badge color={isAttiva ? "green" : "gray"}>{struttura.stato}</Badge>
+          </div>
+          <p style={{ fontSize: "0.8rem", color: "hsl(var(--tf-text-muted))", display: "flex", alignItems: "center", gap: "0.35rem" }}>
+            <span>📍</span> {struttura.indirizzo}
+          </p>
+          {corsiCount !== undefined && (
+            <p style={{ fontSize: "0.75rem", color: "hsl(var(--tf-text-muted))", marginTop: 4 }}>
+              🏃 {corsiCount} corsi disponibili
+            </p>
+          )}
         </div>
-        <span className={`text-xs font-semibold px-2 py-1 rounded-full ${struttura.stato === "Attiva" ? "bg-green-100 text-green-700" : "bg-gray-200 text-gray-500"}`}>
-          {struttura.stato}
-        </span>
       </div>
-      <div className="mt-3 text-xs text-gray-400">P.IVA: {struttura.piva}</div>
-    </Card>
+      <p style={{ marginTop: "0.75rem", fontSize: "0.7rem", color: "hsl(var(--tf-border))", fontFamily: "monospace" }}>
+        P.IVA: {struttura.piva}
+      </p>
+    </div>
   );
 }

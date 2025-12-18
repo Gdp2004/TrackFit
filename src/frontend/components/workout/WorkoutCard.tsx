@@ -1,28 +1,68 @@
-﻿import { Workout } from "@backend/domain/model/types";
-import { Card } from "@frontend/components/ui/Card";
+﻿"use client";
+
+import Link from "next/link";
+import { Badge } from "@frontend/components/ui/Badge";
+import type { Workout } from "@backend/domain/model/types";
 
 interface WorkoutCardProps { workout: Workout; }
 
+const SPORT_ICON: Record<string, string> = {
+  CORSA: "🏃", CICLISMO: "🚴", NUOTO: "🏊", PALESTRA: "🏋️", YOGA: "🧘", CAMMINO: "🚶", ALTRO: "⚡",
+};
+type BadgeColor = "green" | "yellow" | "blue" | "red" | "purple" | "gray";
+const STATO_BADGE: Record<string, { color: BadgeColor; label: string }> = {
+  PIANIFICATA: { color: "yellow", label: "Pianificata" },
+  IN_CORSO: { color: "green", label: "In corso" },
+  IN_PAUSA: { color: "purple", label: "In pausa" },
+  INTERROTTA: { color: "red", label: "Interrotta" },
+  COMPLETATA_LOCALMENTE: { color: "blue", label: "Locale" },
+  IN_ATTESA_DI_RETE: { color: "gray", label: "In attesa" },
+  IN_SINCRONIZZAZIONE: { color: "blue", label: "Sync…" },
+  CONSOLIDATA: { color: "green", label: "Consolidata" },
+};
+
 export function WorkoutCard({ workout }: WorkoutCardProps) {
-  const statoColor: Record<string, string> = {
-    PIANIFICATA: "text-yellow-500",
-    IN_CORSO: "text-green-500",
-    CONSOLIDATA: "text-blue-600",
-    INTERROTTA: "text-red-500",
-  };
+  const badge = STATO_BADGE[workout.stato] ?? { color: "gray" as BadgeColor, label: workout.stato };
+  const icon = SPORT_ICON[workout.tipo] ?? "⚡";
+
   return (
-    <Card className="hover:shadow-xl transition-shadow">
-      <div className="flex justify-between items-start">
-        <div>
-          <p className="font-bold text-gray-900 text-lg">{workout.tipo}</p>
-          <p className="text-sm text-gray-500">{new Date(workout.dataOra).toLocaleString("it-IT")}</p>
+    <Link href={`/workouts/${workout.id}`} style={{ textDecoration: "none" }}>
+      <div
+        className="tf-card"
+        style={{
+          display: "flex", alignItems: "center", gap: "1rem",
+          padding: "1rem 1.25rem",
+          cursor: "pointer",
+        }}
+      >
+        {/* Sport icon */}
+        <div style={{
+          width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+          background: "hsl(var(--tf-surface-2))",
+          display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem",
+        }}>
+          {icon}
         </div>
-        <span className={`text-xs font-semibold ${statoColor[workout.stato] ?? "text-gray-400"}`}>{workout.stato}</span>
+
+        {/* Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "hsl(var(--tf-text))" }}>
+            {workout.tipo.charAt(0) + workout.tipo.slice(1).toLowerCase()}
+          </p>
+          <p style={{ fontSize: "0.78rem", color: "hsl(var(--tf-text-muted))", marginTop: 2 }}>
+            {new Date(workout.dataOra).toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+          </p>
+        </div>
+
+        {/* Metrics */}
+        <div style={{ display: "flex", gap: "1rem", textAlign: "right", flexShrink: 0 }}>
+          <div>
+            <p style={{ fontWeight: 700, fontSize: "1rem", color: "hsl(var(--tf-text))" }}>{workout.durata}<span style={{ fontSize: "0.7rem", fontWeight: 400, marginLeft: 2 }}>min</span></p>
+            {workout.distanza && <p style={{ fontSize: "0.72rem", color: "hsl(var(--tf-text-muted))" }}>{workout.distanza.toFixed(1)} km</p>}
+          </div>
+          <Badge color={badge.color}>{badge.label}</Badge>
+        </div>
       </div>
-      <div className="mt-3 flex gap-4 text-sm text-gray-600">
-        <span>â± {workout.durata} min</span>
-        {workout.distanza && <span>ðŸ“ {workout.distanza.toFixed(2)} km</span>}
-      </div>
-    </Card>
+    </Link>
   );
 }

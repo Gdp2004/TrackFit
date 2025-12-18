@@ -1,24 +1,71 @@
-﻿import { User } from "@backend/domain/model/types";
-import { Card } from "@frontend/components/ui/Card";
+﻿"use client";
+
+import { useState } from "react";
+import { Badge } from "@frontend/components/ui/Badge";
 import { Button } from "@frontend/components/ui/Button";
+import { BookingModal } from "./BookingModal";
+import type { User } from "@backend/domain/model/types";
 
-interface CoachCardProps { coach: User; onPrenota: (coachId: string) => void; }
+interface CoachCardProps { coach: User & { specializzazione?: string; rating?: number }; }
 
-export function CoachCard({ coach, onPrenota }: CoachCardProps) {
+function StarRating({ rating }: { rating?: number }) {
+  if (!rating) return null;
   return (
-    <Card className="hover:shadow-xl transition-shadow">
-      <div className="flex items-center gap-4 mb-4">
-        <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xl">
-          {coach.nome[0]}{coach.cognome[0]}
+    <div style={{ display: "flex", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <span key={s} style={{ fontSize: "0.75rem", color: s <= Math.round(rating) ? "#f59e0b" : "hsl(var(--tf-border))" }}>★</span>
+      ))}
+      <span style={{ fontSize: "0.72rem", color: "hsl(var(--tf-text-muted))", marginLeft: 4 }}>{rating.toFixed(1)}</span>
+    </div>
+  );
+}
+
+const BG_COLORS = [
+  "linear-gradient(135deg,hsl(220 90% 56%),hsl(270 70% 60%))",
+  "linear-gradient(135deg,hsl(158 64% 40%),hsl(200 80% 50%))",
+  "linear-gradient(135deg,hsl(38 92% 50%),hsl(20 80% 55%))",
+];
+
+export function CoachCard({ coach }: CoachCardProps) {
+  const [modalOpen, setModalOpen] = useState(false);
+  const idx = coach.id.charCodeAt(0) % BG_COLORS.length;
+  const initials = `${coach.nome[0]}${coach.cognome[0]}`.toUpperCase();
+
+  return (
+    <>
+      <div className="tf-card" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {/* Avatar + info */}
+        <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <div style={{
+            width: 52, height: 52, borderRadius: "50%", flexShrink: 0,
+            background: BG_COLORS[idx],
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontWeight: 800, fontSize: "1.1rem", color: "#fff",
+          }}>
+            {initials}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontWeight: 700, fontSize: "0.95rem" }}>{coach.nome} {coach.cognome}</p>
+            <p style={{ fontSize: "0.75rem", color: "hsl(var(--tf-text-muted))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {coach.email}
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="font-semibold text-gray-900">{coach.nome} {coach.cognome}</p>
-          <p className="text-xs text-gray-400">{coach.email}</p>
+
+        {/* Specializzazione + rating */}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+          {coach.specializzazione && (
+            <Badge color="blue">{coach.specializzazione}</Badge>
+          )}
+          <StarRating rating={coach.rating} />
         </div>
+
+        <Button onClick={() => setModalOpen(true)} style={{ width: "100%" }}>
+          🗓️ Prenota slot
+        </Button>
       </div>
-      <Button variant="primary" className="w-full" onClick={() => onPrenota(coach.id)}>
-        Prenota slot
-      </Button>
-    </Card>
+
+      <BookingModal coach={coach} open={modalOpen} onClose={() => setModalOpen(false)} />
+    </>
   );
 }
