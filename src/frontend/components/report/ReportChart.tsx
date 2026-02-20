@@ -50,8 +50,8 @@ export function ReportChart({ report }: ReportChartProps) {
               }}
             />
             <Legend wrapperStyle={{ fontSize: "0.78rem" }} />
-            <Line type="monotone" dataKey="km" stroke="hsl(220 90% 56%)" strokeWidth={2.5} dot={{ r: 4 }} name="km" />
-            <Line type="monotone" dataKey="minuti" stroke="hsl(158 64% 52%)" strokeWidth={2.5} dot={{ r: 4 }} name="minuti" />
+            <Line type="monotone" dataKey="km" stroke="hsl(25 95% 53%)" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(25 95% 53%)" }} name="km" />
+            <Line type="monotone" dataKey="minuti" stroke="hsl(38 100% 60%)" strokeWidth={2.5} dot={{ r: 4, fill: "hsl(38 100% 60%)" }} name="minuti" />
           </LineChart>
         </ResponsiveContainer>
       </div>

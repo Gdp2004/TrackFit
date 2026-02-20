@@ -21,9 +21,9 @@ function StarRating({ rating }: { rating?: number }) {
 }
 
 const BG_COLORS = [
-  "linear-gradient(135deg,hsl(220 90% 56%),hsl(270 70% 60%))",
-  "linear-gradient(135deg,hsl(158 64% 40%),hsl(200 80% 50%))",
-  "linear-gradient(135deg,hsl(38 92% 50%),hsl(20 80% 55%))",
+  "linear-gradient(135deg,hsl(25 95% 53%),hsl(20 90% 38%))",
+  "linear-gradient(135deg,hsl(38 100% 55%),hsl(25 95% 45%))",
+  "linear-gradient(135deg,hsl(20 85% 45%),hsl(10 80% 35%))",
 ];
 
 export function CoachCard({ coach }: CoachCardProps) {

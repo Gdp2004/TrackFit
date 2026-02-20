@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                     alignItems: "center",
                     justifyContent: "center",
                     padding: "3rem",
-                    background: "linear-gradient(160deg, hsl(var(--tf-primary-dark)) 0%, hsl(230 60% 20%) 50%, hsl(158 64% 20%) 100%)",
+                    background: "linear-gradient(160deg, hsl(20 50% 10%) 0%, hsl(var(--tf-bg)) 50%, hsl(25 30% 8%) 100%)",
                     position: "relative",
                     overflow: "hidden",
                 }}
