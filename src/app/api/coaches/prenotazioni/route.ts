@@ -3,11 +3,15 @@ import { z } from "zod";
 import { CreateCoachManagerService } from "@/backend/application/service/coach/CreateCoachManagerService";
 import { CoachSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/CoachSupabaseAdapter";
 import { UserSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/UserSupabaseAdapter";
+import { SupabaseRealtimeNotificationAdapter } from "@/backend/infrastructure/adapter/out/notification/SupabaseRealtimeNotificationAdapter";
+import { AuditLogSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/AuditLogSupabaseAdapter";
 
 function buildService() {
     const coachRepo = new CoachSupabaseAdapter();
     const userRepo = new UserSupabaseAdapter();
-    return new CreateCoachManagerService(coachRepo, userRepo);
+    const notificationService = new SupabaseRealtimeNotificationAdapter();
+    const auditRepo = new AuditLogSupabaseAdapter();
+    return new CreateCoachManagerService(coachRepo, userRepo, notificationService, auditRepo);
 }
 
 const PrenotaSchema = z.object({

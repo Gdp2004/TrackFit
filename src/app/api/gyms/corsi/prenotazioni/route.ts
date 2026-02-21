@@ -2,10 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { CreateGymManagerService } from "@/backend/application/service/gym/CreateGymManagerService";
 import { GymSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/GymSupabaseAdapter";
+import { SubscriptionSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/SubscriptionSupabaseAdapter";
+import { SupabaseRealtimeNotificationAdapter } from "@/backend/infrastructure/adapter/out/notification/SupabaseRealtimeNotificationAdapter";
+import { AuditLogSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/AuditLogSupabaseAdapter";
 
 function buildService() {
-    const gymRepo = new GymSupabaseAdapter();
-    return new CreateGymManagerService(gymRepo);
+    return new CreateGymManagerService(
+        new GymSupabaseAdapter(),
+        new SubscriptionSupabaseAdapter(),
+        new SupabaseRealtimeNotificationAdapter(),
+        new AuditLogSupabaseAdapter()
+    );
 }
 
 const PrenotaCorsoSchema = z.object({

@@ -8,7 +8,8 @@ import { Abbonamento } from "@/backend/domain/model/types";
 
 export interface SubscriptionManagementPort {
     acquistaAbbonamento(userId: string, tipoId: string, couponCode?: string): Promise<Abbonamento>;
-    cancellaAbbonamento(abbonamentoId: string): Promise<void>; // OCL R5: 30 days notice
+    cancellaAbbonamento(abbonamentoId: string): Promise<void>;
     validaAccesso(qrCode: string, strutturaId: string): Promise<boolean>;
     getAbbonamento(userId: string): Promise<Abbonamento | null>;
+    impostaRinnovoAutomatico(abbonamentoId: string, userId: string, attivo: boolean): Promise<Abbonamento>; // FR21
 }

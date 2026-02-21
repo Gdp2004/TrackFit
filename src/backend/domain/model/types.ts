@@ -75,6 +75,30 @@ export interface Abbonamento {
     dataInizio: string;
     dataFine: string;
     importo: number;
+    rinnovoAutomatico?: boolean;    // FR21: auto-renewal toggle
+}
+
+/** FR7: Tipo abbonamento configurabile dal Gestore */
+export interface TipoAbbonamento {
+    id: string;
+    strutturaId: string;
+    nome: string;                   // es. "Mensile", "Annuale"
+    durataMesi: number;
+    prezzo: number;
+    rinnovabile: boolean;
+}
+
+/** R4: Coupon promozionale */
+export interface Coupon {
+    id: string;
+    codice: string;                 // es. "PROMO2025"
+    strutturaId: string;            // R4: valido solo per struttura specifica
+    tipoAbbonamentoId: string;      // R4: valido solo per piano specifico
+    percentualeSconto: number;      // R4: sconto percentuale (es. 50)
+    monoUso: boolean;               // R4: un solo utilizzo per utente
+    scadenza: string;               // R4: data di scadenza (ISO date)
+    utenteId?: string;              // popolato quando riscattato
+    usato: boolean;
 }
 
 export interface Pagamento {
@@ -149,13 +173,27 @@ export interface Report {
     userId?: string;
     strutturaId?: string;
     periodo: string;
-    tipo: "UTENTE" | "COACH" | "GESTORE";
-    distanzaTotale?: number;
-    tempoTotaleMinuti?: number;
-    ritmoMedio?: number;
-    incassoTotale?: number;     // solo gestore
-    accessiGiornalieri?: number;
-    abbonamentiAttivi?: number;
+    tipo: "UTENTE" | "COACH" | "GESTORE" | "ADMIN";
+    distanzaTotale?: number;            // UTENTE
+    tempoTotaleMinuti?: number;         // UTENTE/COACH
+    ritmoMedio?: number;                // UTENTE
+    utentiSeguiti?: number;             // COACH
+    frequenzaMediaCorsi?: number;       // COACH
+    incassoTotale?: number;             // GESTORE
+    accessiGiornalieri?: number;        // GESTORE
+    abbonamentiAttivi?: number;         // GESTORE/ADMIN
+    totaleStrutture?: number;           // ADMIN
+    totaleUtenti?: number;              // ADMIN
+    ricavoAggregato?: number;           // ADMIN
     formato: "PDF" | "CSV";
     generatoAt: string;
+}
+
+/** R10: Audit log per tutte le operazioni amministrative */
+export interface AuditLogOperazione {
+    id: string;
+    utenteId: string;                   // chi ha eseguito l'operazione
+    azione: string;                     // es. "CREAZIONE_SUB", "USO_COUPON", "PAGAMENTO"
+    datiJSON: Record<string, unknown>;  // payload dell'operazione
+    timestamp: string;
 }

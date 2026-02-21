@@ -1,42 +1,61 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+﻿// ============================================================
+// POST/GET /api/reports – Report generazione (FR12, FR13, FR14, FR15)
+// GET  /api/reports/export – Esportazione CSV (FR28)
+// ============================================================
+
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { CreateReportManagerService } from "@/backend/application/service/report/CreateReportManagerService";
 import { ReportSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/ReportSupabaseAdapter";
+import { UserSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/UserSupabaseAdapter";
 
 function buildService() {
-  const reportRepo = new ReportSupabaseAdapter();
-  return new CreateReportManagerService(reportRepo);
+  return new CreateReportManagerService(
+    new ReportSupabaseAdapter(),
+    new UserSupabaseAdapter()
+  );
 }
 
 const GeneraReportSchema = z.object({
   userId: z.string().uuid().optional(),
+  coachId: z.string().uuid().optional(),
   strutturaId: z.string().uuid().optional(),
   periodo: z.string().min(1),
-  tipo: z.enum(["UTENTE", "COACH", "GESTORE"]),
+  tipo: z.enum(["UTENTE", "COACH", "GESTORE", "ADMIN"]),
+  formato: z.enum(["PDF", "CSV"]).optional().default("PDF"),
 });
 
-// POST /api/reports - Genera un nuovo report (UC11)
+// POST /api/reports – Genera report (FR12–FR15)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const parsed = GeneraReportSchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-    }
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
     const service = buildService();
+    const { tipo, userId, coachId, strutturaId, periodo } = parsed.data;
     let report;
 
-    if (parsed.data.tipo === "UTENTE" && parsed.data.userId) {
-      report = await service.generaReportUtente(parsed.data.userId, parsed.data.periodo, "UTENTE");
-    } else if (parsed.data.tipo === "GESTORE" && parsed.data.strutturaId) {
-      report = await service.generaReportGestore(parsed.data.strutturaId, parsed.data.periodo);
-    } else {
-      return NextResponse.json({ error: "Parametri incompleti per il tipo di report" }, { status: 400 });
+    if (tipo === "UTENTE" && userId) report = await service.generaReportUtente(userId, periodo, tipo);
+    else if (tipo === "COACH" && coachId) report = await service.generaReportCoach(coachId, periodo);
+    else if (tipo === "GESTORE" && strutturaId) report = await service.generaReportGestore(strutturaId, periodo);
+    else if (tipo === "ADMIN") report = await service.generaReportAdmin(periodo);
+    else return NextResponse.json({ error: "Parametri incompleti per il tipo di report." }, { status: 400 });
+
+    // FR28: Se formato=CSV restituisce file scaricabile
+    if (parsed.data.formato === "CSV") {
+      const csv = service.exportCSV(report);
+      return new NextResponse(csv, {
+        status: 200,
+        headers: {
+          "Content-Type": "text/csv; charset=utf-8",
+          "Content-Disposition": `attachment; filename="report-${tipo}-${periodo}.csv"`,
+        },
+      });
     }
 
     return NextResponse.json(report, { status: 201 });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
   }
 }

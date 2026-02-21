@@ -1,25 +1,29 @@
 ﻿// ============================================================
 // CreateCoachManagerService
-// Application layer – implements CoachManagementPort (UC6/UC7)
+// Application layer – implements CoachManagementPort
+// Fixes: R1 (corretta guardia 48h), R2 (email post-modifica)
 // ============================================================
 
 import { CoachManagementPort } from "@/backend/domain/port/in/CoachManagementPort";
 import { CoachRepositoryPort } from "@/backend/domain/port/out/CoachRepositoryPort";
+import { UserRepositoryPort } from "@/backend/domain/port/out/UserRepositoryPort";
+import { NotificationServicePort } from "@/backend/domain/port/out/NotificationServicePort";
+import { AuditLogRepositoryPort } from "@/backend/domain/port/out/AuditLogRepositoryPort";
 import { Prenotazione, User } from "@/backend/domain/model/types";
 import { StatoPrenotazioneEnum } from "@/backend/domain/model/enums";
-// Used for fetching users
-import { UserRepositoryPort } from "@/backend/domain/port/out/UserRepositoryPort";
 
 export class CreateCoachManagerService implements CoachManagementPort {
   constructor(
     private readonly coachRepo: CoachRepositoryPort,
-    private readonly userRepo: UserRepositoryPort
+    private readonly userRepo: UserRepositoryPort,
+    private readonly notificationService: NotificationServicePort,
+    private readonly auditRepo: AuditLogRepositoryPort
   ) { }
 
+  // ─── Prenotazione slot coach ──────────────────────────────────────────────────
   async prenotaSlotCoach(userId: string, coachId: string, dataOra: Date): Promise<Prenotazione> {
     if (dataOra <= new Date()) throw new Error("dataOra deve essere nel futuro.");
 
-    // Pre-condition: Check if slot is already taken
     const slotEsistente = await this.coachRepo.findPrenotazioneAttivaBySlot(coachId, dataOra);
     if (slotEsistente) throw new Error("Slot già occupato per questo coach.");
 
@@ -28,30 +32,86 @@ export class CreateCoachManagerService implements CoachManagementPort {
       coachId,
       dataOra: dataOra.toISOString(),
       stato: StatoPrenotazioneEnum.CONFERMATA,
-      importoTotale: 30.0 // Default fee
+      importoTotale: 30.0,
     });
   }
 
-  async modificaPianoAtleta(coachId: string, sessioneId: string, nuovaDataOra: Date, motivazione: string): Promise<void> {
-    // SDD OCL Vincolo R1: preavviso minimo 48h
-    // In this implementation, we simulate fetching the old workout (or session) to check the 48h constraint
-    // Wait, the Workout Repo manages workouts. For the sake of the Coach Port handling audit, we log it.
-    const ore48 = 48 * 60 * 60 * 1000;
-    const diff = nuovaDataOra.getTime() - Date.now();
-    if (diff < ore48 && nuovaDataOra.getTime() > Date.now()) {
-      throw new Error("Vincolo R1: Le modifiche al piano richiedono 48 ore di preavviso.");
+  // ─── R1 + R2: Modifica piano atleta ──────────────────────────────────────────
+  async modificaPianoAtleta(
+    coachId: string,
+    sessioneId: string,
+    nuovaDataOra: Date,
+    motivazione: string
+  ): Promise<void> {
+    // R1: La sessione è modificabile SOLO se l'ora di INIZIO dista ≥ 48h dal momento
+    // della modifica (non dalla nuova dataOra, ma dalla VECCHIA dataOra della sessione).
+    // NB: il workoutRepo non è iniettato qui; il checkdeve avvenire sulla vecchia dataOra.
+    // Recuperiamo la prenotazione tramite sessioneId per ottenere la vecchia dataOra.
+    const prenotazione = await this.coachRepo.findPrenotazioneById(sessioneId);
+    if (!prenotazione) throw new Error("Sessione non trovata.");
+
+    const ore48Ms = 48 * 60 * 60 * 1000;
+    const vecchiaDataOra = new Date(prenotazione.dataOra);
+    const msAllaSessione = vecchiaDataOra.getTime() - Date.now();
+
+    if (msAllaSessione < ore48Ms) {
+      throw new Error(
+        "Vincolo R1: La sessione può essere modificata solo se mancano ancora ≥ 48 ore al suo inizio."
+      );
     }
 
-    // Save modification to Audit Log
-    await this.coachRepo.saveAuditLog(coachId, sessioneId, new Date(), nuovaDataOra, motivazione);
+    // Aggiorna la prenotazione con la nuova dataOra
+    await this.coachRepo.updatePrenotazione(sessioneId, {
+      dataOra: nuovaDataOra.toISOString(),
+    });
 
-    // Notice: Actual workout update would be handled via Workout port or triggering a domain event
+    // R10: Salva audit log della modifica
+    await this.coachRepo.saveAuditLog(
+      coachId,
+      sessioneId,
+      vecchiaDataOra,
+      nuovaDataOra,
+      motivazione
+    );
+    await this.auditRepo.registra({
+      utenteId: coachId,
+      azione: "MODIFICA_PIANO_ATLETA",
+      datiJSON: {
+        sessioneId,
+        vecchiaDataOra: vecchiaDataOra.toISOString(),
+        nuovaDataOra: nuovaDataOra.toISOString(),
+        motivazione,
+      },
+      timestamp: new Date().toISOString(),
+    });
+
+    // R2: Invia email all'atleta con riepilogo della modifica
+    const atleta = await this.userRepo.findById(prenotazione.userId!);
+    if (atleta) {
+      await this.notificationService.inviaEmail(
+        atleta.email,
+        "Modifica piano allenamento",
+        {
+          atletaNome: `${atleta.nome} ${atleta.cognome}`,
+          vecchiaDataOra: vecchiaDataOra.toISOString(),
+          nuovaDataOra: nuovaDataOra.toISOString(),
+          motivazione,
+          riferimentoPiano: sessioneId,
+        }
+      );
+
+      // Notifica in-app
+      await this.notificationService.inviaNotificaRealtime(prenotazione.userId!, {
+        titolo: "Piano allenamento modificato",
+        messaggio: `Il tuo allenamento è stato spostato al ${nuovaDataOra.toLocaleDateString("it-IT")}. Motivazione: ${motivazione}`,
+        tipo: "modifica_piano",
+        dati: { nuovaDataOra: nuovaDataOra.toISOString(), motivazione },
+      });
+    }
   }
 
+  // ─── FR13: Roster atleti del coach ───────────────────────────────────────────
   async getRosterAtleti(coachId: string): Promise<User[]> {
-    // Coach can only see users who are associated with them
-    // As a simplification, we might need a `findUsersByCoachId` in userRepo
-    // For now, this is a conceptual implementation of the port
-    throw new Error("Method not properly supported by UserRepositoryPort yet.");
+    return this.userRepo.findByCoachId(coachId);
   }
 }
