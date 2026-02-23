@@ -46,7 +46,7 @@ export class CreateGymManagerService implements GymManagementPort {
     cun: string,
     denominazione: string,
     indirizzo: string,
-    gestoreId: string
+    gestoreid: string
   ): Promise<Struttura> {
     // R8: Unicità esatta P.IVA e CUN
     const esisteEsatta = await this.gymRepo.existsStrutturaByPivaOrCun(piva, cun);
@@ -65,12 +65,12 @@ export class CreateGymManagerService implements GymManagementPort {
       }
     }
 
-    const struttura = await this.gymRepo.saveStruttura({ piva, cun, denominazione, indirizzo, gestoreId, stato: "Attiva" });
+    const struttura = await this.gymRepo.saveStruttura({ piva, cun, denominazione, indirizzo, gestoreid, stato: "Attiva" });
 
     await this.auditRepo.registra({
-      utenteId: gestoreId,
+      utenteId: gestoreid,
       azione: "CREAZIONE_STRUTTURA",
-      datiJSON: { strutturaId: struttura.id, piva, cun, denominazione },
+      datiJSON: { strutturaid: struttura.id, piva, cun, denominazione },
       timestamp: new Date().toISOString(),
     });
 
@@ -78,74 +78,74 @@ export class CreateGymManagerService implements GymManagementPort {
   }
 
   // ─── FR6/FR26: Crea corso (con notifica cancellazione) ───────────────────
-  async creaCorso(corso: Omit<Corso, "id" | "postiOccupati">): Promise<Corso> {
-    return this.gymRepo.saveCorso({ ...corso, postiOccupati: 0 });
+  async creaCorso(corso: Omit<Corso, "id" | "postioccupati">): Promise<Corso> {
+    return this.gymRepo.saveCorso({ ...corso, postioccupati: 0 });
   }
 
-  async cancellaCorso(corsoId: string, gestoreId: string): Promise<void> {
-    const corso = await this.gymRepo.findCorsoById(corsoId);
+  async cancellaCorso(corsoid: string, gestoreid: string): Promise<void> {
+    const corso = await this.gymRepo.findCorsoById(corsoid);
     if (!corso) throw new Error("Corso non trovato.");
 
     // FR26: Notifica tutti gli utenti prenotati e in lista d'attesa
-    const prenotatiIds = await this.gymRepo.findUserIdsByCorsoId(corsoId);
-    const attesaIds = await this.gymRepo.findUserIdsInListaAttesa(corsoId);
+    const prenotatiIds = await this.gymRepo.findUserIdsByCorsoId(corsoid);
+    const attesaIds = await this.gymRepo.findUserIdsInListaAttesa(corsoid);
     const tutti = [...new Set([...prenotatiIds, ...attesaIds])];
 
     await Promise.all(
       tutti.map(uid =>
         this.notificationService.inviaNotificaRealtime(uid, {
           titolo: "Corso cancellato",
-          messaggio: `Il corso "${corso.nome}" del ${new Date(corso.dataOra).toLocaleDateString("it-IT")} è stato annullato.`,
+          messaggio: `Il corso "${corso.nome}" del ${new Date(corso.dataora).toLocaleDateString("it-IT")} è stato annullato.`,
           tipo: "cancellazione",
-          dati: { corsoId, corsoNome: corso.nome },
+          dati: { corsoid, corsoNome: corso.nome },
         })
       )
     );
 
-    await this.gymRepo.deleteCorso(corsoId);
+    await this.gymRepo.deleteCorso(corsoid);
 
     await this.auditRepo.registra({
-      utenteId: gestoreId,
+      utenteId: gestoreid,
       azione: "CANCELLAZIONE_CORSO",
-      datiJSON: { corsoId, corsoNome: corso.nome, utentiNotificati: tutti.length },
+      datiJSON: { corsoid, corsoNome: corso.nome, utentiNotificati: tutti.length },
       timestamp: new Date().toISOString(),
     });
   }
 
   // ─── FR8: Prenota corso (verifica abbonamento + capacità) ────────────────
-  async prenotaCorsoPalestra(userId: string, corsoId: string): Promise<Prenotazione> {
-    const corso = await this.gymRepo.findCorsoById(corsoId);
+  async prenotaCorsoPalestra(userid: string, corsoid: string): Promise<Prenotazione> {
+    const corso = await this.gymRepo.findCorsoById(corsoid);
     if (!corso) throw new Error("Corso non trovato.");
 
     // FR8: Verifica abbonamento attivo
-    const sub = await this.subRepo.findByUserIdActive(userId);
-    if (!sub || sub.stato !== StatoAbbonamentoEnum.ATTIVO || new Date(sub.dataFine) < new Date()) {
+    const sub = await this.subRepo.findByUserIdActive(userid);
+    if (!sub || sub.stato !== StatoAbbonamentoEnum.ATTIVO || new Date(sub.datafine) < new Date()) {
       throw new Error("FR8: Abbonamento non attivo. Acquista un abbonamento per prenotare corsi.");
     }
 
     // FR8/FR25: Verifica capacità
-    if (corso.postiOccupati >= corso.capacitaMassima) {
+    if (corso.postioccupati >= corso.capacitamassima) {
       // FR25: Iscrivi alla lista d'attesa
-      const entry = await this.gymRepo.addToListaAttesa(corsoId, userId);
-      await this.notificationService.inviaNotificaRealtime(userId, {
+      const entry = await this.gymRepo.addToListaAttesa(corsoid, userid);
+      await this.notificationService.inviaNotificaRealtime(userid, {
         titolo: "Corso al completo – Lista d'attesa",
         messaggio: `Sei in posizione ${entry.posizione} nella lista d'attesa per "${corso.nome}".`,
         tipo: "lista_attesa",
-        dati: { corsoId, posizione: entry.posizione },
+        dati: { corsoid, posizione: entry.posizione },
       });
       throw new Error(`Corso al completo. Sei in lista d'attesa (posizione ${entry.posizione}).`);
     }
 
     const prenotazione = await this.gymRepo.savePrenotazioneCorso({
-      userId,
-      corsoId,
-      strutturaId: corso.strutturaId,
-      dataOra: corso.dataOra,
+      userid,
+      corsoid,
+      strutturaid: corso.strutturaid,
+      dataora: corso.dataora,
       stato: StatoPrenotazioneEnum.CONFERMATA,
-      importoTotale: 0, // incluso nell'abbonamento
+      importototale: 0, // incluso nell'abbonamento
     });
 
-    await this.gymRepo.incrementaPostiOccupati(corsoId);
+    await this.gymRepo.incrementaPostiOccupati(corsoid);
     return prenotazione;
   }
 
@@ -154,12 +154,12 @@ export class CreateGymManagerService implements GymManagementPort {
     const p = await this.gymRepo.findPrenotazioneCorsoById(prenotazioneId);
     if (!p) throw new Error("Prenotazione non trovata.");
 
-    const oreAlCorso = (new Date(p.dataOra).getTime() - Date.now()) / (1000 * 60 * 60);
+    const oreAlCorso = (new Date(p.dataora).getTime() - Date.now()) / (1000 * 60 * 60);
 
-    let rimborso = p.importoTotale;
+    let rimborso = p.importototale;
     if (oreAlCorso < CANCELLAZIONE_GRATUITA_ORE) {
       // R3: penale del 50% se cancellazione tardiva
-      rimborso = p.importoTotale * (1 - PENALE_PERCENTUALE);
+      rimborso = p.importototale * (1 - PENALE_PERCENTUALE);
     }
 
     const aggiornata = await this.gymRepo.savePrenotazioneCorso({
@@ -168,35 +168,35 @@ export class CreateGymManagerService implements GymManagementPort {
       rimborso,
     });
 
-    if (p.corsoId) {
-      await this.gymRepo.decrementaPostiOccupati(p.corsoId);
+    if (p.corsoid) {
+      await this.gymRepo.decrementaPostiOccupati(p.corsoid);
 
       // FR25: Promuovi primo in lista d'attesa e notificalo
-      const prossimo = await this.gymRepo.popFromListaAttesa(p.corsoId);
+      const prossimo = await this.gymRepo.popFromListaAttesa(p.corsoid);
       if (prossimo) {
         // Crea prenotazione automatica per il prossimo in lista
         await this.gymRepo.savePrenotazioneCorso({
-          userId: prossimo.userId,
-          corsoId: p.corsoId,
-          strutturaId: p.strutturaId,
-          dataOra: p.dataOra,
+          userid: prossimo.userid,
+          corsoid: p.corsoid,
+          strutturaid: p.strutturaid,
+          dataora: p.dataora,
           stato: StatoPrenotazioneEnum.CONFERMATA,
-          importoTotale: 0,
+          importototale: 0,
         });
-        await this.gymRepo.incrementaPostiOccupati(p.corsoId);
+        await this.gymRepo.incrementaPostiOccupati(p.corsoid);
 
         // FR25: Notifica il promosso
-        await this.notificationService.inviaNotificaRealtime(prossimo.userId, {
+        await this.notificationService.inviaNotificaRealtime(prossimo.userid, {
           titolo: "Posto disponibile!",
           messaggio: `Si è liberato un posto nel corso. La tua prenotazione è stata confermata automaticamente.`,
           tipo: "lista_attesa",
-          dati: { corsoId: p.corsoId },
+          dati: { corsoid: p.corsoid },
         });
       }
     }
   }
 
-  async getCorsiStruttura(strutturaId: string): Promise<Corso[]> {
-    return this.gymRepo.findCorsiByStrutturaId(strutturaId);
+  async getCorsiStruttura(strutturaid: string): Promise<Corso[]> {
+    return this.gymRepo.findCorsiByStrutturaId(strutturaid);
   }
 }

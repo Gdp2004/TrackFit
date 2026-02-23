@@ -43,7 +43,7 @@ export function PaymentHistory({ payments }: PaymentHistoryProps) {
                         return (
                             <tr key={p.id} style={{ borderBottom: "1px solid hsl(var(--tf-border)/.5)" }}>
                                 <td style={{ padding: "0.75rem", color: "hsl(var(--tf-text-muted))" }}>
-                                    {new Date(p.createdAt).toLocaleDateString("it-IT")}
+                                    {new Date(p.createdat).toLocaleDateString("it-IT")}
                                 </td>
                                 <td style={{ padding: "0.75rem", fontWeight: 700 }}>€{p.importo.toFixed(2)}</td>
                                 <td style={{ padding: "0.75rem", color: "hsl(var(--tf-text-muted))" }}>

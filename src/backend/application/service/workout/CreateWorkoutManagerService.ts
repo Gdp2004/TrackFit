@@ -19,23 +19,23 @@ export class CreateWorkoutManagerService implements WorkoutManagementPort {
     ) { }
 
     async pianificaSessione(
-        userId: string,
+        userid: string,
         tipo: string,
-        dataOra: Date,
+        dataora: Date,
         durata: number,
         obiettivo?: string
     ): Promise<Workout> {
-        if (!userId || !tipo || !dataOra || durata <= 0) {
+        if (!userid || !tipo || !dataora || durata <= 0) {
             throw new Error("Parametri non validi per pianificare la sessione.");
         }
-        if (dataOra <= new Date()) {
-            throw new Error("dataOra deve essere nel futuro.");
+        if (dataora <= new Date()) {
+            throw new Error("dataora deve essere nel futuro.");
         }
 
         const workout = await this.workoutRepo.save({
-            userId,
+            userid,
             tipo,
-            dataOra: dataOra.toISOString(),
+            dataora: dataora.toISOString(),
             durata,
             obiettivo,
             stato: WorkoutStatoEnum.PIANIFICATA,
@@ -43,8 +43,8 @@ export class CreateWorkoutManagerService implements WorkoutManagementPort {
         });
 
         // UC3: programma promemoria push 10 min prima
-        const reminderTime = new Date(dataOra.getTime() - 10 * 60 * 1000);
-        await this.notificationService.programmaReminder(userId, reminderTime);
+        const reminderTime = new Date(dataora.getTime() - 10 * 60 * 1000);
+        await this.notificationService.programmaReminder(userid, reminderTime);
 
         return workout;
     }
@@ -55,7 +55,7 @@ export class CreateWorkoutManagerService implements WorkoutManagementPort {
 
         return this.workoutRepo.update(workoutId, {
             stato: WorkoutStatoEnum.COMPLETATA_LOCALMENTE,
-            percezionesSforzo: percezione,
+            percezionessforzo: percezione,
             note,
         });
     }
@@ -79,29 +79,29 @@ export class CreateWorkoutManagerService implements WorkoutManagementPort {
         // Crash recovery UC4
         const workout = await this.workoutRepo.findById(workoutId);
         if (workout) {
-            this.storageLocale.salva(workoutId, { ...workout, percezionesSforzo: 0, note: JSON.stringify(datiRimasti) });
+            this.storageLocale.salva(workoutId, { ...workout, percezionessforzo: 0, note: JSON.stringify(datiRimasti) });
         }
     }
 
-    async importaAttivitaEsterna(userId: string, source: string, externalId: string, data: Partial<Workout>): Promise<Workout> {
+    async importaAttivitaEsterna(userid: string, source: string, externalId: string, data: Partial<Workout>): Promise<Workout> {
         // UC5 External Import Deduplication
-        const esistenti = await this.workoutRepo.findByUserId(userId);
-        const duplicato = esistenti.find(w => w.stravaId === externalId);
+        const esistenti = await this.workoutRepo.findByUserId(userid);
+        const duplicato = esistenti.find(w => w.stravaid === externalId);
         if (duplicato) throw new Error("Attività già importata nel sistema.");
 
         return this.workoutRepo.save({
             ...data,
-            userId,
+            userid,
             tipo: data.tipo ?? "ALTRO",
-            dataOra: data.dataOra ?? new Date().toISOString(),
+            dataora: data.dataora ?? new Date().toISOString(),
             durata: data.durata ?? 0,
             stato: WorkoutStatoEnum.CONSOLIDATA, // Already completed externally
             sorgente: "IMPORT",
-            stravaId: externalId
+            stravaid: externalId
         });
     }
 
-    async getSessioniUtente(userId: string): Promise<Workout[]> {
-        return this.workoutRepo.findByUserId(userId);
+    async getSessioniUtente(userid: string): Promise<Workout[]> {
+        return this.workoutRepo.findByUserId(userid);
     }
 }

@@ -17,7 +17,7 @@ export function WorkoutForm() {
     const router = useRouter();
     const [form, setForm] = useState({
         tipo: TipoWorkoutEnum.CORSA,
-        dataOra: new Date(Date.now() + 3600000).toISOString().slice(0, 16), // +1h
+        dataora: new Date(Date.now() + 3600000).toISOString().slice(0, 16), // +1h
         durata: 45,
         obiettivo: "",
     });
@@ -38,9 +38,9 @@ export function WorkoutForm() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    userId: user.id,
+                    userid: user.id,
                     tipo: form.tipo,
-                    dataOra: new Date(form.dataOra).toISOString(),
+                    dataora: new Date(form.dataora).toISOString(),
                     durata: Number(form.durata),
                     obiettivo: form.obiettivo || undefined,
                 }),
@@ -90,11 +90,11 @@ export function WorkoutForm() {
             </div>
 
             <Input
-                id="dataOra"
+                id="dataora"
                 label="Data e ora"
                 type="datetime-local"
-                value={form.dataOra}
-                onChange={set("dataOra")}
+                value={form.dataora}
+                onChange={set("dataora")}
                 required
             />
 

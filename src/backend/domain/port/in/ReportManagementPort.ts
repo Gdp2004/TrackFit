@@ -7,8 +7,8 @@
 import { Report } from "@/backend/domain/model/types";
 
 export interface ReportManagementPort {
-    generaReportUtente(userId: string, periodo: string, tipo: string): Promise<Report>;
-    generaReportCoach(coachId: string, periodo: string): Promise<Report>;              // FR13
-    generaReportGestore(strutturaId: string, periodo: string): Promise<Report>;
+    generaReportUtente(userid: string, periodo: string, tipo: string): Promise<Report>;
+    generaReportCoach(coachid: string, periodo: string): Promise<Report>;              // FR13
+    generaReportGestore(strutturaid: string, periodo: string): Promise<Report>;
     generaReportAdmin(periodo: string): Promise<Report>;                               // FR15
 }

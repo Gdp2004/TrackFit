@@ -6,6 +6,7 @@ node_modules/
 out/
 
 # ===== VARIABILI D'AMBIENTE (contengono segreti!) =====
+.env.local
 .env.development.local
 .env.test.local
 .env.production.local

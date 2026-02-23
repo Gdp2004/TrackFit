@@ -7,9 +7,9 @@
 import { Abbonamento } from "@/backend/domain/model/types";
 
 export interface SubscriptionManagementPort {
-    acquistaAbbonamento(userId: string, tipoId: string, couponCode?: string): Promise<Abbonamento>;
-    cancellaAbbonamento(abbonamentoId: string): Promise<void>;
-    validaAccesso(qrCode: string, strutturaId: string): Promise<boolean>;
-    getAbbonamento(userId: string): Promise<Abbonamento | null>;
-    impostaRinnovoAutomatico(abbonamentoId: string, userId: string, attivo: boolean): Promise<Abbonamento>; // FR21
+    acquistaAbbonamento(userid: string, tipoid: string, couponCode?: string): Promise<Abbonamento>;
+    cancellaAbbonamento(abbonamentoid: string): Promise<void>;
+    validaAccesso(qrCode: string, strutturaid: string): Promise<boolean>;
+    getAbbonamento(userid: string): Promise<Abbonamento | null>;
+    impostaRinnovoAutomatico(abbonamentoid: string, userid: string, attivo: boolean): Promise<Abbonamento>; // FR21
 }

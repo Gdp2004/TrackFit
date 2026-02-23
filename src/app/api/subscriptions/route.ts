@@ -27,20 +27,20 @@ function buildService() {
 }
 
 const AcquistaSchema = z.object({
-  userId: z.string().uuid(),
-  tipoId: z.string().uuid(),
-  strutturaId: z.string().uuid(),
+  userid: z.string().uuid(),
+  tipoid: z.string().uuid(),
+  strutturaid: z.string().uuid(),
   couponCode: z.string().optional(),
 });
 
 const ValidaAccessoSchema = z.object({
   qrCode: z.string().uuid(),
-  strutturaId: z.string().uuid(),
+  strutturaid: z.string().uuid(),
 });
 
 const RinnovoSchema = z.object({
-  abbonamentoId: z.string().uuid(),
-  userId: z.string().uuid(),
+  abbonamentoid: z.string().uuid(),
+  userid: z.string().uuid(),
   attivo: z.boolean(),
 });
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       const parsed = ValidaAccessoSchema.safeParse(body);
       if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
       const service = buildService();
-      const valido = await service.validaAccesso(parsed.data.qrCode, parsed.data.strutturaId);
+      const valido = await service.validaAccesso(parsed.data.qrCode, parsed.data.strutturaid);
       return NextResponse.json({ valido });
     } catch (err: unknown) {
       return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -66,10 +66,10 @@ export async function POST(req: NextRequest) {
   if (path.endsWith("/cancel")) {
     try {
       const body = await req.json();
-      const parsed = z.object({ abbonamentoId: z.string().uuid() }).safeParse(body);
+      const parsed = z.object({ abbonamentoid: z.string().uuid() }).safeParse(body);
       if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
       const service = buildService();
-      await service.cancellaAbbonamento(parsed.data.abbonamentoId);
+      await service.cancellaAbbonamento(parsed.data.abbonamentoid);
       return NextResponse.json({ message: "Abbonamento cancellato." });
     } catch (err: unknown) {
       return NextResponse.json({ error: String(err) }, { status: 400 });
@@ -83,8 +83,8 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     const service = buildService();
     const abbonamento = await service.acquistaAbbonamento(
-      parsed.data.userId,
-      parsed.data.tipoId,
+      parsed.data.userid,
+      parsed.data.tipoid,
       parsed.data.couponCode
     );
     // Restituisce clientSecret per completare 3-D Secure (R6) lato client
@@ -94,13 +94,13 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/subscriptions?userId=xxx – Abbonamento attivo (FR22)
+// GET /api/subscriptions?userid=xxx – Abbonamento attivo (FR22)
 export async function GET(req: NextRequest) {
-  const userId = req.nextUrl.searchParams.get("userId");
-  if (!userId) return NextResponse.json({ error: "userId obbligatorio" }, { status: 400 });
+  const userid = req.nextUrl.searchParams.get("userid");
+  if (!userid) return NextResponse.json({ error: "userid obbligatorio" }, { status: 400 });
   try {
     const service = buildService();
-    const abbonamento = await service.getAbbonamento(userId);
+    const abbonamento = await service.getAbbonamento(userid);
     return NextResponse.json(abbonamento ?? null);
   } catch (err: unknown) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
@@ -115,8 +115,8 @@ export async function PUT(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     const service = buildService();
     const aggiornato = await service.impostaRinnovoAutomatico(
-      parsed.data.abbonamentoId,
-      parsed.data.userId,
+      parsed.data.abbonamentoid,
+      parsed.data.userid,
       parsed.data.attivo
     );
     return NextResponse.json(aggiornato);

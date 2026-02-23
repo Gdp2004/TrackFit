@@ -1,6 +1,6 @@
 // ============================================================
 // useRealtime – Custom Hook
-// Subscribes to a Supabase Realtime channel for a given userId.
+// Subscribes to a Supabase Realtime channel for a given userid.
 // Use this in React components to receive live notifications.
 // ============================================================
 
@@ -12,15 +12,15 @@ import type { NotificationPayload } from "@backend/domain/port/out/NotificationS
 
 type RealtimeCallback = (payload: NotificationPayload & { timestamp: string }) => void;
 
-export function useRealtime(userId: string | null, onNotifica: RealtimeCallback) {
+export function useRealtime(userid: string | null, onNotifica: RealtimeCallback) {
     const callbackRef = useRef(onNotifica);
     callbackRef.current = onNotifica;
 
     useEffect(() => {
-        if (!userId) return;
+        if (!userid) return;
 
         const channel = supabaseBrowser
-            .channel(`notifiche:${userId}`)
+            .channel(`notifiche:${userid}`)
             .on("broadcast", { event: "notifica" }, ({ payload }) => {
                 callbackRef.current(payload as NotificationPayload & { timestamp: string });
             })
@@ -29,5 +29,5 @@ export function useRealtime(userId: string | null, onNotifica: RealtimeCallback)
         return () => {
             supabaseBrowser.removeChannel(channel);
         };
-    }, [userId]);
+    }, [userid]);
 }

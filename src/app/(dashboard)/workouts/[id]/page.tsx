@@ -12,8 +12,8 @@ import { WorkoutStatoEnum } from "@backend/domain/model/enums";
 
 // Mock fallbacks
 const MOCK_MAP: Record<string, Workout> = {
-    "1": { id: "1", userId: "u1", tipo: "CORSA", dataOra: new Date(Date.now() - 86400000).toISOString(), durata: 45, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 8.3, calorie: 420, percezionesSforzo: 6, obiettivo: "Zona 2 lenta", sorgente: "TRACKING" },
-    "2": { id: "2", userId: "u1", tipo: "PALESTRA", dataOra: new Date(Date.now() - 172800000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, calorie: 280, percezionesSforzo: 8, note: "Nuovo massimale squat 100kg", sorgente: "TRACKING" },
+    "1": { id: "1", userid: "u1", tipo: "CORSA", dataora: new Date(Date.now() - 86400000).toISOString(), durata: 45, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 8.3, calorie: 420, percezionessforzo: 6, obiettivo: "Zona 2 lenta", sorgente: "TRACKING" },
+    "2": { id: "2", userid: "u1", tipo: "PALESTRA", dataora: new Date(Date.now() - 172800000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, calorie: 280, percezionessforzo: 8, note: "Nuovo massimale squat 100kg", sorgente: "TRACKING" },
 };
 
 export default function WorkoutDetailPage() {
@@ -26,7 +26,7 @@ export default function WorkoutDetailPage() {
     useEffect(() => {
         if (!user || !id) return;
         // Try fetching – fallback to mock
-        fetch(`/api/workouts?userId=${user.id}`)
+        fetch(`/api/workouts?userid=${user.id}`)
             .then((r) => r.json())
             .then((list: Workout[]) => {
                 const found = Array.isArray(list) ? list.find((w) => w.id === id) : null;

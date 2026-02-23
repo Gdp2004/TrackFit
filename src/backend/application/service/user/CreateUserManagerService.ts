@@ -20,6 +20,7 @@ export class CreateUserManagerService implements UserManagementPort {
     const supabase = createSupabaseServerClient();
     const { data, error } = await supabase.auth.admin.createUser({
       email, password,
+      email_confirm: true,
       user_metadata: { nome, cognome, ruolo },
     });
 
@@ -28,32 +29,32 @@ export class CreateUserManagerService implements UserManagementPort {
     // Let userRepo sync the user table if needed, though Supabase triggers might handle it
     const user = await this.userRepo.findById(data.user.id);
     if (!user) {
-      return this.userRepo.save({ id: data.user.id, email, nome, cognome, ruolo, createdAt: new Date().toISOString() });
+      return this.userRepo.save({ id: data.user.id, email, nome, cognome, ruolo, createdat: new Date().toISOString() });
     }
     return user;
   }
 
-  async getUtente(userId: string): Promise<User> {
-    const user = await this.userRepo.findById(userId);
+  async getUtente(userid: string): Promise<User> {
+    const user = await this.userRepo.findById(userid);
     if (!user) throw new Error("Utente non trovato");
     return user;
   }
 
-  async aggiornaUtente(userId: string, aggiornamenti: Partial<User>): Promise<User> {
-    return this.userRepo.update(userId, aggiornamenti);
+  async aggiornaUtente(userid: string, aggiornamenti: Partial<User>): Promise<User> {
+    return this.userRepo.update(userid, aggiornamenti);
   }
 
-  async eliminaUtente(userId: string): Promise<void> {
+  async eliminaUtente(userid: string): Promise<void> {
     const supabase = createSupabaseServerClient();
-    await supabase.auth.admin.deleteUser(userId);
-    await this.userRepo.delete(userId);
+    await supabase.auth.admin.deleteUser(userid);
+    await this.userRepo.delete(userid);
   }
 
-  async associaCoach(userId: string, coachId: string): Promise<void> {
-    await this.userRepo.update(userId, { coachId });
+  async associaCoach(userid: string, coachid: string): Promise<void> {
+    await this.userRepo.update(userid, { coachid });
   }
 
-  async aggiornaParametriFisici(userId: string, peso: number, altezza: number): Promise<User> {
-    return this.userRepo.update(userId, { peso, altezza });
+  async aggiornaParametriFisici(userid: string, peso: number, altezza: number): Promise<User> {
+    return this.userRepo.update(userid, { peso, altezza });
   }
 }

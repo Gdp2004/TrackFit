@@ -16,9 +16,9 @@ function buildService() {
 }
 
 const PrenotaCorsoSchema = z.object({
-    userId: z.string().uuid(),
-    corsoId: z.string().uuid(),
-    strutturaId: z.string().uuid()
+    userid: z.string().uuid(),
+    corsoid: z.string().uuid(),
+    strutturaid: z.string().uuid()
 });
 
 const CancellaPrenotazioneSchema = z.object({
@@ -36,8 +36,8 @@ export async function POST(req: NextRequest) {
 
         const service = buildService();
         const result = await service.prenotaCorsoPalestra(
-            parsed.data.userId,
-            parsed.data.corsoId
+            parsed.data.userid,
+            parsed.data.corsoid
         );
 
         return NextResponse.json(result, { status: 201 });

@@ -77,7 +77,7 @@ export function WorkoutDetail({ workout }: WorkoutDetailProps) {
                         {workout.tipo.charAt(0) + workout.tipo.slice(1).toLowerCase()}
                     </h1>
                     <p style={{ fontSize: "0.83rem", color: "hsl(var(--tf-text-muted))", marginTop: 2 }}>
-                        {new Date(workout.dataOra).toLocaleString("it-IT", {
+                        {new Date(workout.dataora).toLocaleString("it-IT", {
                             weekday: "long", day: "numeric", month: "long", year: "numeric",
                             hour: "2-digit", minute: "2-digit",
                         })}
@@ -91,10 +91,10 @@ export function WorkoutDetail({ workout }: WorkoutDetailProps) {
                 <MetricBox icon="⏱️" label="Durata" value={workout.durata} unit="min" />
                 <MetricBox icon="📍" label="Distanza" value={workout.distanza?.toFixed(2)} unit="km" />
                 <MetricBox icon="🔥" label="Calorie" value={workout.calorie} unit="kcal" />
-                <MetricBox icon="❤️" label="FC media" value={workout.frequenzaCardiacaMedia} unit="bpm" />
+                <MetricBox icon="❤️" label="FC media" value={workout.frequenzacardiacamedia} unit="bpm" />
             </div>
 
-            <RpeGauge rpe={workout.percezionesSforzo} />
+            <RpeGauge rpe={workout.percezionessforzo} />
 
             {/* Obiettivo / Note */}
             {workout.obiettivo && (
@@ -111,9 +111,9 @@ export function WorkoutDetail({ workout }: WorkoutDetailProps) {
             )}
 
             {/* GPX trace */}
-            {workout.gpxTrace && (
+            {workout.gpxtrace && (
                 <a
-                    href={workout.gpxTrace}
+                    href={workout.gpxtrace}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{

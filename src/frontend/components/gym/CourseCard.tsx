@@ -4,10 +4,10 @@ import { Badge } from "@frontend/components/ui/Badge";
 import { Button } from "@frontend/components/ui/Button";
 import type { Corso } from "@backend/domain/model/types";
 
-interface CourseCardProps { corso: Corso; onBook: (corsoId: string) => void; loading?: boolean; }
+interface CourseCardProps { corso: Corso; onBook: (corsoid: string) => void; loading?: boolean; }
 
 export function CourseCard({ corso, onBook, loading }: CourseCardProps) {
-    const posti = corso.capacitaMassima - corso.postiOccupati;
+    const posti = corso.capacitamassima - corso.postioccupati;
     const pieno = posti <= 0;
 
     return (
@@ -27,7 +27,7 @@ export function CourseCard({ corso, onBook, loading }: CourseCardProps) {
                     }
                 </div>
                 <p style={{ fontSize: "0.78rem", color: "hsl(var(--tf-text-muted))" }}>
-                    📅 {new Date(corso.dataOra).toLocaleString("it-IT", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                    📅 {new Date(corso.dataora).toLocaleString("it-IT", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                     {" · "}⏱️ {corso.durata} min
                 </p>
             </div>

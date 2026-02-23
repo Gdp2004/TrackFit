@@ -3,9 +3,9 @@ import { z } from "zod";
 import { createSupabaseServerClient } from "@backend/infrastructure/config/supabase";
 
 const PrenotaSchema = z.object({
-  userId: z.string().uuid(),
-  coachId: z.string().uuid(),
-  dataOra: z.string().datetime(),
+  userid: z.string().uuid(),
+  coachid: z.string().uuid(),
+  dataora: z.string().datetime(),
 });
 
 // POST /api/coaches â€“ prenota uno slot con il coach (UC7)
@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = PrenotaSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-    if (new Date(parsed.data.dataOra) <= new Date()) {
-      return NextResponse.json({ error: "dataOra deve essere futura" }, { status: 400 });
+    if (new Date(parsed.data.dataora) <= new Date()) {
+      return NextResponse.json({ error: "dataora deve essere futura" }, { status: 400 });
     }
     // TODO: inject CreateCoachManagerService
     return NextResponse.json({ message: "Prenotazione coach in lavorazione" }, { status: 202 });
@@ -24,12 +24,12 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/coaches?coachId=xxx â€“ roster atleti del coach (UC6)
+// GET /api/coaches?coachid=xxx â€“ roster atleti del coach (UC6)
 export async function GET(req: NextRequest) {
-  const coachId = req.nextUrl.searchParams.get("coachId");
-  if (!coachId) return NextResponse.json({ error: "coachId obbligatorio" }, { status: 400 });
+  const coachid = req.nextUrl.searchParams.get("coachid");
+  if (!coachid) return NextResponse.json({ error: "coachid obbligatorio" }, { status: 400 });
   const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase.from("prenotazioni").select("*").eq("coachId", coachId);
+  const { data, error } = await supabase.from("prenotazioni").select("*").eq("coachid", coachid);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json(data);
 }

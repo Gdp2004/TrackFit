@@ -89,7 +89,7 @@ export async function middleware(req: NextRequest) {
         );
     }
 
-    // Propaga userId e ruolo agli handler via header (evita re-fetch del JWT)
+    // Propaga userid e ruolo agli handler via header (evita re-fetch del JWT)
     const requestHeaders = new Headers(req.headers);
     requestHeaders.set("x-user-id", supabaseUser.id);
     requestHeaders.set("x-user-role", supabaseUser.role ?? "UTENTE");

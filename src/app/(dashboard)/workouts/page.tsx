@@ -10,11 +10,11 @@ import type { Workout } from "@backend/domain/model/types";
 import { WorkoutStatoEnum, TipoWorkoutEnum } from "@backend/domain/model/enums";
 
 const MOCK: Workout[] = [
-    { id: "1", userId: "u1", tipo: "CORSA", dataOra: new Date(Date.now() - 86400000).toISOString(), durata: 45, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 8.3, calorie: 420, sorgente: "TRACKING" },
-    { id: "2", userId: "u1", tipo: "PALESTRA", dataOra: new Date(Date.now() - 172800000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, calorie: 280, sorgente: "TRACKING" },
-    { id: "3", userId: "u1", tipo: "CICLISMO", dataOra: new Date(Date.now() + 86400000).toISOString(), durata: 90, stato: WorkoutStatoEnum.PIANIFICATA, distanza: 25, sorgente: "TRACKING" },
-    { id: "4", userId: "u1", tipo: "NUOTO", dataOra: new Date(Date.now() - 259200000).toISOString(), durata: 40, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 1.5, calorie: 300, sorgente: "TRACKING" },
-    { id: "5", userId: "u1", tipo: "YOGA", dataOra: new Date(Date.now() - 345600000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, sorgente: "TRACKING" },
+    { id: "1", userid: "u1", tipo: "CORSA", dataora: new Date(Date.now() - 86400000).toISOString(), durata: 45, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 8.3, calorie: 420, sorgente: "TRACKING" },
+    { id: "2", userid: "u1", tipo: "PALESTRA", dataora: new Date(Date.now() - 172800000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, calorie: 280, sorgente: "TRACKING" },
+    { id: "3", userid: "u1", tipo: "CICLISMO", dataora: new Date(Date.now() + 86400000).toISOString(), durata: 90, stato: WorkoutStatoEnum.PIANIFICATA, distanza: 25, sorgente: "TRACKING" },
+    { id: "4", userid: "u1", tipo: "NUOTO", dataora: new Date(Date.now() - 259200000).toISOString(), durata: 40, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 1.5, calorie: 300, sorgente: "TRACKING" },
+    { id: "5", userid: "u1", tipo: "YOGA", dataora: new Date(Date.now() - 345600000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, sorgente: "TRACKING" },
 ];
 
 type FilterStato = "TUTTI" | WorkoutStatoEnum;
@@ -29,7 +29,7 @@ export default function WorkoutsPage() {
 
     useEffect(() => {
         if (!user) return;
-        fetch(`/api/workouts?userId=${user.id}`)
+        fetch(`/api/workouts?userid=${user.id}`)
             .then((r) => r.json())
             .then((d: Workout[]) => setWorkouts(Array.isArray(d) && d.length > 0 ? d : MOCK))
             .catch(() => setWorkouts(MOCK))
@@ -41,7 +41,7 @@ export default function WorkoutsPage() {
         const okStato = filterStato === "TUTTI" || w.stato === filterStato;
         const okTipo = filterTipo === "TUTTI" || w.tipo === filterTipo;
         return okStato && okTipo;
-    }).sort((a, b) => new Date(b.dataOra).getTime() - new Date(a.dataOra).getTime());
+    }).sort((a, b) => new Date(b.dataora).getTime() - new Date(a.dataora).getTime());
 
     const labelStato: Record<string, string> = {
         TUTTI: "Tutti", PIANIFICATA: "Pianificate", IN_CORSO: "In corso", CONSOLIDATA: "Consolidate", INTERROTTA: "Interrotte",

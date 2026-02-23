@@ -7,12 +7,12 @@ import type { User } from "@backend/domain/model/types";
 import { RuoloEnum } from "@backend/domain/model/enums";
 
 const MOCK_COACHES: (User & { specializzazione: string; rating: number })[] = [
-    { id: "c1", nome: "Marco", cognome: "Ferrari", email: "mferrari@trackfit.it", ruolo: RuoloEnum.COACH, createdAt: "", specializzazione: "Running", rating: 4.8 },
-    { id: "c2", nome: "Giulia", cognome: "Bianchi", email: "gbianchi@trackfit.it", ruolo: RuoloEnum.COACH, createdAt: "", specializzazione: "Crossfit", rating: 4.6 },
-    { id: "c3", nome: "Luca", cognome: "Esposito", email: "lesposito@trackfit.it", ruolo: RuoloEnum.COACH, createdAt: "", specializzazione: "Yoga", rating: 4.9 },
-    { id: "c4", nome: "Sara", cognome: "Romano", email: "sromano@trackfit.it", ruolo: RuoloEnum.COACH, createdAt: "", specializzazione: "Nuoto", rating: 4.5 },
-    { id: "c5", nome: "Andrea", cognome: "Conti", email: "aconti@trackfit.it", ruolo: RuoloEnum.COACH, createdAt: "", specializzazione: "Ciclismo", rating: 4.7 },
-    { id: "c6", nome: "Elena", cognome: "Greco", email: "egrecomailtrackfit.it", ruolo: RuoloEnum.COACH, createdAt: "", specializzazione: "Pilates", rating: 4.4 },
+    { id: "c1", nome: "Marco", cognome: "Ferrari", email: "mferrari@trackfit.it", ruolo: RuoloEnum.COACH, createdat: "", specializzazione: "Running", rating: 4.8 },
+    { id: "c2", nome: "Giulia", cognome: "Bianchi", email: "gbianchi@trackfit.it", ruolo: RuoloEnum.COACH, createdat: "", specializzazione: "Crossfit", rating: 4.6 },
+    { id: "c3", nome: "Luca", cognome: "Esposito", email: "lesposito@trackfit.it", ruolo: RuoloEnum.COACH, createdat: "", specializzazione: "Yoga", rating: 4.9 },
+    { id: "c4", nome: "Sara", cognome: "Romano", email: "sromano@trackfit.it", ruolo: RuoloEnum.COACH, createdat: "", specializzazione: "Nuoto", rating: 4.5 },
+    { id: "c5", nome: "Andrea", cognome: "Conti", email: "aconti@trackfit.it", ruolo: RuoloEnum.COACH, createdat: "", specializzazione: "Ciclismo", rating: 4.7 },
+    { id: "c6", nome: "Elena", cognome: "Greco", email: "egrecomailtrackfit.it", ruolo: RuoloEnum.COACH, createdat: "", specializzazione: "Pilates", rating: 4.4 },
 ];
 
 export default function CoachesPage() {

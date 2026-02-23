@@ -15,16 +15,16 @@ function buildService() {
 }
 
 const PrenotaSchema = z.object({
-    userId: z.string().uuid(),
-    coachId: z.string().uuid(),
-    dataOra: z.string().datetime(), // ISO string
+    userid: z.string().uuid(),
+    coachid: z.string().uuid(),
+    dataora: z.string().datetime(), // ISO string
 });
 
 const ModificaSchema = z.object({
-    coachId: z.string().uuid(),
+    coachid: z.string().uuid(),
     atletaId: z.string().uuid(),
-    sessioneId: z.string().uuid(),
-    nuovaDataOra: z.string().datetime(),
+    sessioneid: z.string().uuid(),
+    nuovadataora: z.string().datetime(),
     motivazione: z.string().min(1)
 });
 
@@ -39,9 +39,9 @@ export async function POST(req: NextRequest) {
 
         const service = buildService();
         const prenotazione = await service.prenotaSlotCoach(
-            parsed.data.userId,
-            parsed.data.coachId,
-            new Date(parsed.data.dataOra)
+            parsed.data.userid,
+            parsed.data.coachid,
+            new Date(parsed.data.dataora)
         );
 
         return NextResponse.json(prenotazione, { status: 201 });
@@ -61,9 +61,9 @@ export async function PUT(req: NextRequest) {
 
         const service = buildService();
         await service.modificaPianoAtleta(
-            parsed.data.coachId,
-            parsed.data.sessioneId,
-            new Date(parsed.data.nuovaDataOra),
+            parsed.data.coachid,
+            parsed.data.sessioneid,
+            new Date(parsed.data.nuovadataora),
             parsed.data.motivazione
         );
 

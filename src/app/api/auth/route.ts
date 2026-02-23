@@ -109,12 +109,12 @@ export async function POST(req: NextRequest) {
 
 // DELETE /api/auth – Cancellazione account + dati (FR30, GDPR)
 export async function DELETE(req: NextRequest) {
-  // L'userId viene iniettato dal middleware RBAC dopo verifica JWT
-  const userId = req.headers.get("x-user-id");
-  if (!userId) return NextResponse.json({ error: "Non autenticato." }, { status: 401 });
+  // L'userid viene iniettato dal middleware RBAC dopo verifica JWT
+  const userid = req.headers.get("x-user-id");
+  if (!userid) return NextResponse.json({ error: "Non autenticato." }, { status: 401 });
   try {
     const service = buildUserService();
-    await service.eliminaUtente(userId);
+    await service.eliminaUtente(userid);
     return NextResponse.json({ message: "Account e dati eliminati definitivamente (GDPR Art. 17)." });
   } catch (err: unknown) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

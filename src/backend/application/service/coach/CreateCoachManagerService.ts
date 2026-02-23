@@ -21,38 +21,38 @@ export class CreateCoachManagerService implements CoachManagementPort {
   ) { }
 
   // ─── Prenotazione slot coach ──────────────────────────────────────────────────
-  async prenotaSlotCoach(userId: string, coachId: string, dataOra: Date): Promise<Prenotazione> {
-    if (dataOra <= new Date()) throw new Error("dataOra deve essere nel futuro.");
+  async prenotaSlotCoach(userid: string, coachid: string, dataora: Date): Promise<Prenotazione> {
+    if (dataora <= new Date()) throw new Error("dataora deve essere nel futuro.");
 
-    const slotEsistente = await this.coachRepo.findPrenotazioneAttivaBySlot(coachId, dataOra);
+    const slotEsistente = await this.coachRepo.findPrenotazioneAttivaBySlot(coachid, dataora);
     if (slotEsistente) throw new Error("Slot già occupato per questo coach.");
 
     return this.coachRepo.savePrenotazione({
-      userId,
-      coachId,
-      dataOra: dataOra.toISOString(),
+      userid,
+      coachid,
+      dataora: dataora.toISOString(),
       stato: StatoPrenotazioneEnum.CONFERMATA,
-      importoTotale: 30.0,
+      importototale: 30.0,
     });
   }
 
   // ─── R1 + R2: Modifica piano atleta ──────────────────────────────────────────
   async modificaPianoAtleta(
-    coachId: string,
-    sessioneId: string,
-    nuovaDataOra: Date,
+    coachid: string,
+    sessioneid: string,
+    nuovadataora: Date,
     motivazione: string
   ): Promise<void> {
     // R1: La sessione è modificabile SOLO se l'ora di INIZIO dista ≥ 48h dal momento
-    // della modifica (non dalla nuova dataOra, ma dalla VECCHIA dataOra della sessione).
-    // NB: il workoutRepo non è iniettato qui; il checkdeve avvenire sulla vecchia dataOra.
-    // Recuperiamo la prenotazione tramite sessioneId per ottenere la vecchia dataOra.
-    const prenotazione = await this.coachRepo.findPrenotazioneById(sessioneId);
+    // della modifica (non dalla nuova dataora, ma dalla VECCHIA dataora della sessione).
+    // NB: il workoutRepo non è iniettato qui; il checkdeve avvenire sulla vecchia dataora.
+    // Recuperiamo la prenotazione tramite sessioneid per ottenere la vecchia dataora.
+    const prenotazione = await this.coachRepo.findPrenotazioneById(sessioneid);
     if (!prenotazione) throw new Error("Sessione non trovata.");
 
     const ore48Ms = 48 * 60 * 60 * 1000;
-    const vecchiaDataOra = new Date(prenotazione.dataOra);
-    const msAllaSessione = vecchiaDataOra.getTime() - Date.now();
+    const vecchiadataora = new Date(prenotazione.dataora);
+    const msAllaSessione = vecchiadataora.getTime() - Date.now();
 
     if (msAllaSessione < ore48Ms) {
       throw new Error(
@@ -60,58 +60,58 @@ export class CreateCoachManagerService implements CoachManagementPort {
       );
     }
 
-    // Aggiorna la prenotazione con la nuova dataOra
-    await this.coachRepo.updatePrenotazione(sessioneId, {
-      dataOra: nuovaDataOra.toISOString(),
+    // Aggiorna la prenotazione con la nuova dataora
+    await this.coachRepo.updatePrenotazione(sessioneid, {
+      dataora: nuovadataora.toISOString(),
     });
 
     // R10: Salva audit log della modifica
     await this.coachRepo.saveAuditLog(
-      coachId,
-      sessioneId,
-      vecchiaDataOra,
-      nuovaDataOra,
+      coachid,
+      sessioneid,
+      vecchiadataora,
+      nuovadataora,
       motivazione
     );
     await this.auditRepo.registra({
-      utenteId: coachId,
+      utenteId: coachid,
       azione: "MODIFICA_PIANO_ATLETA",
       datiJSON: {
-        sessioneId,
-        vecchiaDataOra: vecchiaDataOra.toISOString(),
-        nuovaDataOra: nuovaDataOra.toISOString(),
+        sessioneid,
+        vecchiadataora: vecchiadataora.toISOString(),
+        nuovadataora: nuovadataora.toISOString(),
         motivazione,
       },
       timestamp: new Date().toISOString(),
     });
 
     // R2: Invia email all'atleta con riepilogo della modifica
-    const atleta = await this.userRepo.findById(prenotazione.userId!);
+    const atleta = await this.userRepo.findById(prenotazione.userid!);
     if (atleta) {
       await this.notificationService.inviaEmail(
         atleta.email,
         "Modifica piano allenamento",
         {
           atletaNome: `${atleta.nome} ${atleta.cognome}`,
-          vecchiaDataOra: vecchiaDataOra.toISOString(),
-          nuovaDataOra: nuovaDataOra.toISOString(),
+          vecchiadataora: vecchiadataora.toISOString(),
+          nuovadataora: nuovadataora.toISOString(),
           motivazione,
-          riferimentoPiano: sessioneId,
+          riferimentoPiano: sessioneid,
         }
       );
 
       // Notifica in-app
-      await this.notificationService.inviaNotificaRealtime(prenotazione.userId!, {
+      await this.notificationService.inviaNotificaRealtime(prenotazione.userid!, {
         titolo: "Piano allenamento modificato",
-        messaggio: `Il tuo allenamento è stato spostato al ${nuovaDataOra.toLocaleDateString("it-IT")}. Motivazione: ${motivazione}`,
+        messaggio: `Il tuo allenamento è stato spostato al ${nuovadataora.toLocaleDateString("it-IT")}. Motivazione: ${motivazione}`,
         tipo: "modifica_piano",
-        dati: { nuovaDataOra: nuovaDataOra.toISOString(), motivazione },
+        dati: { nuovadataora: nuovadataora.toISOString(), motivazione },
       });
     }
   }
 
   // ─── FR13: Roster atleti del coach ───────────────────────────────────────────
-  async getRosterAtleti(coachId: string): Promise<User[]> {
-    return this.userRepo.findByCoachId(coachId);
+  async getRosterAtleti(coachid: string): Promise<User[]> {
+    return this.userRepo.findByCoachId(coachid);
   }
 }

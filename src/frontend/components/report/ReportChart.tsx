@@ -19,9 +19,9 @@ export function ReportChart({ report }: ReportChartProps) {
       {/* Stat cards row */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.75rem" }}>
         {[
-          { label: "km totali", value: report.distanzaTotale?.toFixed(1) ?? "—", color: "hsl(var(--tf-primary))", bg: "hsl(var(--tf-primary)/.1)" },
-          { label: "minuti tot.", value: String(report.tempoTotaleMinuti ?? "—"), color: "hsl(var(--tf-accent))", bg: "hsl(var(--tf-accent)/.1)" },
-          { label: "min/km medio", value: report.ritmoMedio?.toFixed(2) ?? "—", color: "hsl(38 92% 50%)", bg: "hsl(38 92% 50%/.1)" },
+          { label: "km totali", value: report.distanzatotale?.toFixed(1) ?? "—", color: "hsl(var(--tf-primary))", bg: "hsl(var(--tf-primary)/.1)" },
+          { label: "minuti tot.", value: String(report.tempototaleminuti ?? "—"), color: "hsl(var(--tf-accent))", bg: "hsl(var(--tf-accent)/.1)" },
+          { label: "min/km medio", value: report.ritmomedio?.toFixed(2) ?? "—", color: "hsl(38 92% 50%)", bg: "hsl(38 92% 50%/.1)" },
         ].map(({ label, value, color, bg }) => (
           <div key={label} style={{ background: bg, borderRadius: "var(--tf-radius-sm)", padding: "1rem", textAlign: "center" }}>
             <p style={{ fontWeight: 900, fontSize: "2rem", color, lineHeight: 1 }}>{value}</p>

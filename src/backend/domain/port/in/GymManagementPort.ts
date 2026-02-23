@@ -7,10 +7,10 @@
 import { Struttura, Prenotazione, Corso } from "@/backend/domain/model/types";
 
 export interface GymManagementPort {
-    creaStruttura(piva: string, cun: string, denominazione: string, indirizzo: string, gestoreId: string): Promise<Struttura>;
-    creaCorso(corso: Omit<Corso, "id" | "postiOccupati">): Promise<Corso>;            // FR6
-    cancellaCorso(corsoId: string, gestoreId: string): Promise<void>;                  // FR26
-    prenotaCorsoPalestra(userId: string, corsoId: string): Promise<Prenotazione>;
+    creaStruttura(piva: string, cun: string, denominazione: string, indirizzo: string, gestoreid: string): Promise<Struttura>;
+    creaCorso(corso: Omit<Corso, "id" | "postioccupati">): Promise<Corso>;            // FR6
+    cancellaCorso(corsoid: string, gestoreid: string): Promise<void>;                  // FR26
+    prenotaCorsoPalestra(userid: string, corsoid: string): Promise<Prenotazione>;
     cancellaPrenotazione(prenotazioneId: string): Promise<void>;
-    getCorsiStruttura(strutturaId: string): Promise<Corso[]>;
+    getCorsiStruttura(strutturaid: string): Promise<Corso[]>;
 }

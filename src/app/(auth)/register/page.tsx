@@ -29,7 +29,7 @@ export default function RegisterPage() {
             const res = await fetch("/api/auth", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
+                body: JSON.stringify({ ...form, consensoTermini: true }),
             });
             const data = await res.json();
             if (!res.ok) { setError(data.error ?? "Errore di registrazione"); setLoading(false); return; }

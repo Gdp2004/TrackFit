@@ -25,7 +25,7 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
   ) { }
 
   // ─── FR20: Acquisto abbonamento con pagamento reale ──────────────────────────
-  async acquistaAbbonamento(userId: string, tipoId: string, couponCode?: string): Promise<Abbonamento> {
+  async acquistaAbbonamento(userid: string, tipoid: string, couponCode?: string): Promise<Abbonamento> {
     // TODO (quando TipoAbbonamento sarà su DB): carica prezzo e durata dalla tabella
     // Per ora usa valori di default che verranno sostituiti dalla configurazione del Gestore
     let importo = 50.0;
@@ -35,70 +35,70 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
     if (couponCode) {
       const coupon = await this.couponRepo.findByCodice(couponCode);
       if (!coupon) throw new Error("Coupon non valido o inesistente.");
-      if (coupon.usato && coupon.monoUso) throw new Error("Coupon già utilizzato.");
+      if (coupon.usato && coupon.monouso) throw new Error("Coupon già utilizzato.");
       if (new Date(coupon.scadenza) < new Date()) throw new Error("Coupon scaduto.");
-      if (coupon.tipoAbbonamentoId !== tipoId) throw new Error("R4: Coupon non valido per questo tipo di abbonamento.");
+      if (coupon.tipoabbonamentoid !== tipoid) throw new Error("R4: Coupon non valido per questo tipo di abbonamento.");
 
       // R4: verifica mono-uso per utente
-      const giaUsatoDaQuestoUtente = await this.couponRepo.existsUsoByUtente(coupon.id, userId);
+      const giaUsatoDaQuestoUtente = await this.couponRepo.existsUsoByUtente(coupon.id, userid);
       if (giaUsatoDaQuestoUtente) throw new Error("R4: Coupon già utilizzato da questo utente.");
 
       // R5: Sconto applicato solo alla quota abbonamento
-      importo = importo * (1 - coupon.percentualeSconto / 100);
+      importo = importo * (1 - coupon.percentualesconto / 100);
 
-      // Marca il coupon come usato (R4: monoUso)
-      await this.couponRepo.marcaUsato(coupon.id, userId);
+      // Marca il coupon come usato (R4: monouso)
+      await this.couponRepo.marcaUsato(coupon.id, userid);
 
       // R10: Audit uso coupon
       await this.auditRepo.registra({
-        utenteId: userId,
+        utenteId: userid,
         azione: "USO_COUPON",
-        datiJSON: { couponCodice: couponCode, couponId: coupon.id, tipoId, sconto: coupon.percentualeSconto },
+        datiJSON: { couponCodice: couponCode, couponid: coupon.id, tipoid, sconto: coupon.percentualesconto },
         timestamp: new Date().toISOString(),
       });
     }
 
     // FR20: Crea PaymentIntent su Stripe (ritorna clientSecret per 3-D Secure lato client)
-    const { id: stripePaymentIntentId, clientSecret } = await this.paymentGateway.creaIntentPagamento(
-      importo, "eur", { userId, tipoId }
+    const { id: stripepaymentintentid, clientSecret } = await this.paymentGateway.creaIntentPagamento(
+      importo, "eur", { userid, tipoid }
     );
 
     // Nota: in produzione si aspetta il webhook Stripe "payment_intent.succeeded"
     // prima di creare l'abbonamento. Qui si persiste in stato IN_ATTESA e si
     // aggiorna a ATTIVO via webhook handler (da implementare in /api/stripe/webhook).
     const qrCode = crypto.randomUUID();
-    const dataInizio = new Date();
-    const dataFine = new Date();
-    dataFine.setMonth(dataFine.getMonth() + durataMesi);
+    const datainizio = new Date();
+    const datafine = new Date();
+    datafine.setMonth(datafine.getMonth() + durataMesi);
 
     // FR22: Persisti il pagamento nel DB
     await this.paymentRepo.save({
-      userId,
-      abbonamentoId: undefined, // verrà aggiornato dopo
+      userid,
+      abbonamentoid: undefined, // verrà aggiornato dopo
       importo,
       valuta: "eur",
       stato: StatoPagamentoEnum.IN_ATTESA,  // aggiornato a COMPLETATO via webhook
-      stripePaymentIntentId,
+      stripepaymentintentid,
       metodo: "card",
-      createdAt: new Date().toISOString(),
+      createdat: new Date().toISOString(),
     });
 
     const abbonamento = await this.subRepo.save({
-      userId,
-      tipoId,
+      userid,
+      tipoid,
       stato: StatoAbbonamentoEnum.ATTIVO,
       qrCode,
-      dataInizio: dataInizio.toISOString(),
-      dataFine: dataFine.toISOString(),
+      datainizio: datainizio.toISOString(),
+      datafine: datafine.toISOString(),
       importo,
-      rinnovoAutomatico: false, // default off
+      rinnovoautomatico: false, // default off
     });
 
     // R10: Audit creazione abbonamento
     await this.auditRepo.registra({
-      utenteId: userId,
+      utenteId: userid,
       azione: "CREAZIONE_SUB",
-      datiJSON: { abbonamentoId: abbonamento.id, tipoId, importo, stripePaymentIntentId },
+      datiJSON: { abbonamentoid: abbonamento.id, tipoid, importo, stripepaymentintentid },
       timestamp: new Date().toISOString(),
     });
 
@@ -107,17 +107,17 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
   }
 
   // ─── FR21: Toggle rinnovo automatico ─────────────────────────────────────────
-  async impostaRinnovoAutomatico(abbonamentoId: string, userId: string, attivo: boolean): Promise<Abbonamento> {
-    const sub = await this.subRepo.findById(abbonamentoId);
+  async impostaRinnovoAutomatico(abbonamentoid: string, userid: string, attivo: boolean): Promise<Abbonamento> {
+    const sub = await this.subRepo.findById(abbonamentoid);
     if (!sub) throw new Error("Abbonamento non trovato.");
-    if (sub.userId !== userId) throw new Error("Non autorizzato.");
+    if (sub.userid !== userid) throw new Error("Non autorizzato.");
 
-    const aggiornato = await this.subRepo.update(abbonamentoId, { rinnovoAutomatico: attivo });
+    const aggiornato = await this.subRepo.update(abbonamentoid, { rinnovoautomatico: attivo });
 
     await this.auditRepo.registra({
-      utenteId: userId,
+      utenteId: userid,
       azione: attivo ? "ABILITA_RINNOVO_AUTO" : "DISABILITA_RINNOVO_AUTO",
-      datiJSON: { abbonamentoId },
+      datiJSON: { abbonamentoid },
       timestamp: new Date().toISOString(),
     });
 
@@ -125,33 +125,33 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
   }
 
   // ─── Cancellazione abbonamento (con vincolo preavviso) ────────────────────────
-  async cancellaAbbonamento(abbonamentoId: string): Promise<void> {
-    const sub = await this.subRepo.findById(abbonamentoId);
+  async cancellaAbbonamento(abbonamentoid: string): Promise<void> {
+    const sub = await this.subRepo.findById(abbonamentoid);
     if (!sub) throw new Error("Abbonamento non trovato.");
 
     // Vincolo R5 (SDD): disdetta richiede 30 giorni di preavviso
-    const scadenza = new Date(sub.dataFine);
+    const scadenza = new Date(sub.datafine);
     const preavviso = scadenza.getTime() - Date.now();
     const giorni30 = 30 * 24 * 60 * 60 * 1000;
     if (preavviso < giorni30) {
       throw new Error("Vincolo: disdetta richiede 30 giorni di preavviso prima della scadenza.");
     }
 
-    await this.subRepo.update(abbonamentoId, { stato: StatoAbbonamentoEnum.CANCELLATO });
+    await this.subRepo.update(abbonamentoid, { stato: StatoAbbonamentoEnum.CANCELLATO });
   }
 
   // ─── R7: Validazione QR Code ai tornelli ─────────────────────────────────────
-  async validaAccesso(qrCode: string, strutturaId: string): Promise<boolean> {
+  async validaAccesso(qrCode: string, strutturaid: string): Promise<boolean> {
     const sub = await this.subRepo.findByQrCode(qrCode);
     if (!sub) return false;
     if (sub.stato !== StatoAbbonamentoEnum.ATTIVO) return false;
-    if (new Date(sub.dataFine) < new Date()) return false;
-    if (sub.strutturaId && sub.strutturaId !== strutturaId) return false;
+    if (new Date(sub.datafine) < new Date()) return false;
+    if (sub.strutturaid && sub.strutturaid !== strutturaid) return false;
     return true;
   }
 
   // ─── Recupero abbonamento attivo ──────────────────────────────────────────────
-  async getAbbonamento(userId: string): Promise<Abbonamento | null> {
-    return this.subRepo.findByUserIdActive(userId);
+  async getAbbonamento(userid: string): Promise<Abbonamento | null> {
+    return this.subRepo.findByUserIdActive(userid);
   }
 }

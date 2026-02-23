@@ -10,14 +10,14 @@ import type { Report } from "@backend/domain/model/types";
 type Period = "7" | "30" | "90";
 
 const MOCK_REPORT: Report = {
-    id: "r1", userId: "u1",
+    id: "r1", userid: "u1",
     periodo: "Ultimi 30 giorni",
     tipo: "UTENTE",
-    distanzaTotale: 61.5,
-    tempoTotaleMinuti: 420,
-    ritmoMedio: 5.12,
+    distanzatotale: 61.5,
+    tempototaleminuti: 420,
+    ritmomedio: 5.12,
     formato: "PDF",
-    generatoAt: new Date().toISOString(),
+    generatoat: new Date().toISOString(),
 };
 
 export default function ReportsPage() {
@@ -31,7 +31,7 @@ export default function ReportsPage() {
         if (!user) return;
         setLoading(true);
         const labels: Record<Period, string> = { "7": "Ultimi 7 giorni", "30": "Ultimi 30 giorni", "90": "Ultimi 90 giorni" };
-        fetch(`/api/reports?userId=${user.id}&periodo=${period}&tipo=UTENTE`)
+        fetch(`/api/reports?userid=${user.id}&periodo=${period}&tipo=UTENTE`)
             .then((r) => r.json())
             .then((d: Report) => setReport({ ...MOCK_REPORT, ...d, periodo: labels[period] }))
             .catch(() => setReport({ ...MOCK_REPORT, periodo: labels[period] }))

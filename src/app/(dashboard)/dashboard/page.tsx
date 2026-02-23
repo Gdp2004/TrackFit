@@ -16,9 +16,9 @@ const SPORT_ICON: Record<string, string> = {
 
 // Mock data per demo visuale
 const MOCK_WORKOUTS: Workout[] = [
-  { id: "1", userId: "u1", tipo: "CORSA", dataOra: new Date(Date.now() - 86400000).toISOString(), durata: 45, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 8.3, calorie: 420, sorgente: "TRACKING" },
-  { id: "2", userId: "u1", tipo: "PALESTRA", dataOra: new Date(Date.now() - 172800000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, calorie: 280, sorgente: "TRACKING" },
-  { id: "3", userId: "u1", tipo: "CICLISMO", dataOra: new Date(Date.now() + 86400000).toISOString(), durata: 90, stato: WorkoutStatoEnum.PIANIFICATA, distanza: 25, sorgente: "TRACKING" },
+  { id: "1", userid: "u1", tipo: "CORSA", dataora: new Date(Date.now() - 86400000).toISOString(), durata: 45, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 8.3, calorie: 420, sorgente: "TRACKING" },
+  { id: "2", userid: "u1", tipo: "PALESTRA", dataora: new Date(Date.now() - 172800000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, calorie: 280, sorgente: "TRACKING" },
+  { id: "3", userid: "u1", tipo: "CICLISMO", dataora: new Date(Date.now() + 86400000).toISOString(), durata: 90, stato: WorkoutStatoEnum.PIANIFICATA, distanza: 25, sorgente: "TRACKING" },
 ];
 
 interface StatCardProps { icon: string; label: string; value: string; sub?: string; accent?: string; }
@@ -46,7 +46,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) return;
-    fetch(`/api/workouts?userId=${user.id}`)
+    fetch(`/api/workouts?userid=${user.id}`)
       .then((r) => r.json())
       .then((data: Workout[]) => setWorkouts(Array.isArray(data) ? data : MOCK_WORKOUTS))
       .catch(() => setWorkouts(MOCK_WORKOUTS))
@@ -143,7 +143,7 @@ export default function DashboardPage() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontWeight: 600, fontSize: "0.85rem" }}>{w.tipo}</p>
                       <p style={{ fontSize: "0.75rem", color: "hsl(var(--tf-text-muted))" }}>
-                        {new Date(w.dataOra).toLocaleDateString("it-IT")} · {w.durata} min
+                        {new Date(w.dataora).toLocaleDateString("it-IT")} · {w.durata} min
                       </p>
                     </div>
                     <Badge color="yellow">Pianificata</Badge>

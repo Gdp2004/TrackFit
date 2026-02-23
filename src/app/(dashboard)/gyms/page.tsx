@@ -9,17 +9,17 @@ import type { Struttura, Corso } from "@backend/domain/model/types";
 
 const MOCK_GYMS: { struttura: Struttura; corsi: Corso[] }[] = [
     {
-        struttura: { id: "g1", piva: "12345678901", cun: "CUN001", denominazione: "FitZone Napoli", indirizzo: "Via Toledo 120, 80134 Napoli", stato: "Attiva", gestoreId: "ge1" },
+        struttura: { id: "g1", piva: "12345678901", cun: "CUN001", denominazione: "FitZone Napoli", indirizzo: "Via Toledo 120, 80134 Napoli", stato: "Attiva", gestoreid: "ge1" },
         corsi: [
-            { id: "co1", strutturaId: "g1", nome: "Spinning avanzato", dataOra: new Date(Date.now() + 86400000).toISOString(), capacitaMassima: 15, postiOccupati: 10, durata: 60 },
-            { id: "co2", strutturaId: "g1", nome: "Yoga mattutino", dataOra: new Date(Date.now() + 172800000).toISOString(), capacitaMassima: 20, postiOccupati: 20, durata: 60 },
+            { id: "co1", strutturaid: "g1", nome: "Spinning avanzato", dataora: new Date(Date.now() + 86400000).toISOString(), capacitamassima: 15, postioccupati: 10, durata: 60 },
+            { id: "co2", strutturaid: "g1", nome: "Yoga mattutino", dataora: new Date(Date.now() + 172800000).toISOString(), capacitamassima: 20, postioccupati: 20, durata: 60 },
         ],
     },
     {
-        struttura: { id: "g2", piva: "98765432109", cun: "CUN002", denominazione: "PowerGym Salerno", indirizzo: "Corso Vittorio Emanuele 45, 84100 Salerno", stato: "Attiva", gestoreId: "ge2" },
+        struttura: { id: "g2", piva: "98765432109", cun: "CUN002", denominazione: "PowerGym Salerno", indirizzo: "Corso Vittorio Emanuele 45, 84100 Salerno", stato: "Attiva", gestoreid: "ge2" },
         corsi: [
-            { id: "co3", strutturaId: "g2", nome: "Crossfit Bootcamp", dataOra: new Date(Date.now() + 259200000).toISOString(), capacitaMassima: 12, postiOccupati: 5, durata: 45 },
-            { id: "co4", strutturaId: "g2", nome: "Pilates", dataOra: new Date(Date.now() + 345600000).toISOString(), capacitaMassima: 10, postiOccupati: 8, durata: 55 },
+            { id: "co3", strutturaid: "g2", nome: "Crossfit Bootcamp", dataora: new Date(Date.now() + 259200000).toISOString(), capacitamassima: 12, postioccupati: 5, durata: 45 },
+            { id: "co4", strutturaid: "g2", nome: "Pilates", dataora: new Date(Date.now() + 345600000).toISOString(), capacitamassima: 10, postioccupati: 8, durata: 55 },
         ],
     },
 ];
@@ -31,11 +31,11 @@ export default function GymsPage() {
 
     const toggle = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
 
-    const handleBook = async (corsoId: string) => {
-        setBooking(corsoId);
+    const handleBook = async (corsoid: string) => {
+        setBooking(corsoid);
         await new Promise((r) => setTimeout(r, 900));
         setBooking(null);
-        setNotify(corsoId);
+        setNotify(corsoid);
         setTimeout(() => setNotify(null), 3000);
     };
 

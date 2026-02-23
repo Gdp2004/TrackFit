@@ -17,9 +17,9 @@ function buildService() {
 }
 
 const GeneraReportSchema = z.object({
-  userId: z.string().uuid().optional(),
-  coachId: z.string().uuid().optional(),
-  strutturaId: z.string().uuid().optional(),
+  userid: z.string().uuid().optional(),
+  coachid: z.string().uuid().optional(),
+  strutturaid: z.string().uuid().optional(),
   periodo: z.string().min(1),
   tipo: z.enum(["UTENTE", "COACH", "GESTORE", "ADMIN"]),
   formato: z.enum(["PDF", "CSV"]).optional().default("PDF"),
@@ -33,12 +33,12 @@ export async function POST(req: NextRequest) {
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
     const service = buildService();
-    const { tipo, userId, coachId, strutturaId, periodo } = parsed.data;
+    const { tipo, userid, coachid, strutturaid, periodo } = parsed.data;
     let report;
 
-    if (tipo === "UTENTE" && userId) report = await service.generaReportUtente(userId, periodo, tipo);
-    else if (tipo === "COACH" && coachId) report = await service.generaReportCoach(coachId, periodo);
-    else if (tipo === "GESTORE" && strutturaId) report = await service.generaReportGestore(strutturaId, periodo);
+    if (tipo === "UTENTE" && userid) report = await service.generaReportUtente(userid, periodo, tipo);
+    else if (tipo === "COACH" && coachid) report = await service.generaReportCoach(coachid, periodo);
+    else if (tipo === "GESTORE" && strutturaid) report = await service.generaReportGestore(strutturaid, periodo);
     else if (tipo === "ADMIN") report = await service.generaReportAdmin(periodo);
     else return NextResponse.json({ error: "Parametri incompleti per il tipo di report." }, { status: 400 });
 

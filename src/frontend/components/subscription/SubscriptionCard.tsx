@@ -17,8 +17,8 @@ const STATO_BADGE: Record<string, { color: BadgeColor; label: string }> = {
 export function SubscriptionCard({ abbonamento }: SubscriptionCardProps) {
   const badge = STATO_BADGE[abbonamento.stato] ?? { color: "gray" as BadgeColor, label: abbonamento.stato };
   const now = new Date();
-  const inizio = new Date(abbonamento.dataInizio);
-  const fine = new Date(abbonamento.dataFine);
+  const inizio = new Date(abbonamento.datainizio);
+  const fine = new Date(abbonamento.datafine);
   const total = fine.getTime() - inizio.getTime();
   const elapsed = now.getTime() - inizio.getTime();
   const pct = Math.min(100, Math.max(0, (elapsed / total) * 100));

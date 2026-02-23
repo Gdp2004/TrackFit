@@ -10,17 +10,17 @@ import type { Abbonamento, Pagamento } from "@backend/domain/model/types";
 import { StatoAbbonamentoEnum, StatoPagamentoEnum } from "@backend/domain/model/enums";
 
 const MOCK_ABBONAMENTO: Abbonamento = {
-    id: "ab1", userId: "u1", strutturaId: "g1",
+    id: "ab1", userid: "u1", strutturaid: "g1",
     stato: StatoAbbonamentoEnum.ATTIVO,
     qrCode: "TF-AB1-2025-NAPOLI-ABCDEFGH1234",
-    dataInizio: new Date(Date.now() - 30 * 86400000).toISOString(),
-    dataFine: new Date(Date.now() + 60 * 86400000).toISOString(),
+    datainizio: new Date(Date.now() - 30 * 86400000).toISOString(),
+    datafine: new Date(Date.now() + 60 * 86400000).toISOString(),
     importo: 89,
 };
 
 const MOCK_PAGAMENTI: Pagamento[] = [
-    { id: "p1", userId: "u1", abbonamentoId: "ab1", importo: 89, valuta: "eur", stato: StatoPagamentoEnum.COMPLETATO, metodo: "card", createdAt: new Date(Date.now() - 30 * 86400000).toISOString() },
-    { id: "p2", userId: "u1", abbonamentoId: "ab1", importo: 89, valuta: "eur", stato: StatoPagamentoEnum.COMPLETATO, metodo: "card", createdAt: new Date(Date.now() - 120 * 86400000).toISOString() },
+    { id: "p1", userid: "u1", abbonamentoid: "ab1", importo: 89, valuta: "eur", stato: StatoPagamentoEnum.COMPLETATO, metodo: "card", createdat: new Date(Date.now() - 30 * 86400000).toISOString() },
+    { id: "p2", userid: "u1", abbonamentoid: "ab1", importo: 89, valuta: "eur", stato: StatoPagamentoEnum.COMPLETATO, metodo: "card", createdat: new Date(Date.now() - 120 * 86400000).toISOString() },
 ];
 
 export default function SubscriptionPage() {

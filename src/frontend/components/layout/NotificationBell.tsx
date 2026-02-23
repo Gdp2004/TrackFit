@@ -9,16 +9,16 @@ interface NotificationItem {
     timestamp: string;
 }
 
-export function NotificationBell({ userId }: { userId: string }) {
+export function NotificationBell({ userid }: { userid: string }) {
     const [notifications, setNotifications] = useState<NotificationItem[]>([]);
     const [open, setOpen] = useState(false);
     const unread = notifications.length;
 
-    useRealtime(userId, (payload) => {
+    useRealtime(userid, (payload) => {
         setNotifications((prev) => [
             {
                 titolo: (payload.titolo as string) ?? payload.tipo,
-                corpo: (payload.corpo as string) ?? payload.messaggio,
+                corpo: (payload.messaggio as string),
                 timestamp: payload.timestamp,
             },
             ...prev.slice(0, 4),

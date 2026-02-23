@@ -52,7 +52,7 @@ export function Navbar() {
 
       {/* Right side */}
       <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-        {user && <NotificationBell userId={user.id} />}
+        {user && <NotificationBell userid={user.id} />}
 
         {/* Role badge */}
         {ruolo && (

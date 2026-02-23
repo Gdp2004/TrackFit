@@ -50,7 +50,7 @@ export function WorkoutCard({ workout }: WorkoutCardProps) {
             {workout.tipo.charAt(0) + workout.tipo.slice(1).toLowerCase()}
           </p>
           <p style={{ fontSize: "0.78rem", color: "hsl(var(--tf-text-muted))", marginTop: 2 }}>
-            {new Date(workout.dataOra).toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+            {new Date(workout.dataora).toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
           </p>
         </div>
 

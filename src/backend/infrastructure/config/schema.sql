@@ -4,11 +4,32 @@
 -- ============================================================
 
 -- 1. ENUMS (PostgreSQL native enums matching TS enums)
+DROP TYPE IF EXISTS ruolo_enum CASCADE;
+DROP TYPE IF EXISTS workout_stato_enum CASCADE;
+DROP TYPE IF EXISTS abbonamento_stato_enum CASCADE;
+DROP TYPE IF EXISTS prenotazione_stato_enum CASCADE;
+DROP TYPE IF EXISTS pagamento_stato_enum CASCADE;
+
 CREATE TYPE ruolo_enum AS ENUM ('UTENTE', 'COACH', 'GESTORE', 'ADMIN');
 CREATE TYPE workout_stato_enum AS ENUM ('PIANIFICATA', 'IN_CORSO', 'IN_PAUSA', 'INTERROTTA', 'COMPLETATA_LOCALMENTE', 'IN_ATTESA_DI_RETE', 'IN_SINCRONIZZAZIONE', 'CONSOLIDATA');
 CREATE TYPE abbonamento_stato_enum AS ENUM ('ATTIVO', 'SOSPESO', 'SCADUTO', 'CANCELLATO');
 CREATE TYPE prenotazione_stato_enum AS ENUM ('CONFERMATA', 'CANCELLATA', 'IN_ATTESA');
 CREATE TYPE pagamento_stato_enum AS ENUM ('IN_ATTESA', 'COMPLETATO', 'FALLITO', 'RIMBORSATO');
+
+-- Drop existing tables to allow clean recreation
+DROP TABLE IF EXISTS "storico_uso_coupon" CASCADE;
+DROP TABLE IF EXISTS coupon CASCADE;
+DROP TABLE IF EXISTS pagamenti CASCADE;
+DROP TABLE IF EXISTS abbonamenti CASCADE;
+DROP TABLE IF EXISTS workouts CASCADE;
+DROP TABLE IF EXISTS prenotazioni CASCADE;
+DROP TABLE IF EXISTS lista_attesa CASCADE;
+DROP TABLE IF EXISTS corsi CASCADE;
+DROP TABLE IF EXISTS strutture CASCADE;
+DROP TABLE IF EXISTS coaches CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS audit_log CASCADE;
+DROP TABLE IF EXISTS reports CASCADE;
 
 -- 2. TABLES
 
@@ -19,24 +40,24 @@ CREATE TABLE users (
     nome TEXT NOT NULL,
     cognome TEXT NOT NULL,
     ruolo ruolo_enum DEFAULT 'UTENTE',
-    dataNascita DATE,
+    datanascita DATE,
     peso DECIMAL,
     altezza INT,
-    coachId UUID, -- Self-referencing FK added later
-    createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    coachid UUID, -- Self-referencing FK added later
+    createdat TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Coaches
 CREATE TABLE coaches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    userId UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    strutturaId UUID,
+    userid UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    strutturaid UUID,
     specializzazione TEXT,
     rating DECIMAL DEFAULT 0.0 CHECK (rating >= 0 AND rating <= 5)
 );
 
 -- Add foreign key back to users for coach association
-ALTER TABLE users ADD CONSTRAINT fk_user_coach FOREIGN KEY (coachId) REFERENCES coaches(id) ON DELETE SET NULL;
+ALTER TABLE users ADD CONSTRAINT fk_user_coach FOREIGN KEY (coachid) REFERENCES coaches(id) ON DELETE SET NULL;
 
 -- Strutture (Gyms)
 CREATE TABLE strutture (
@@ -46,115 +67,135 @@ CREATE TABLE strutture (
     denominazione TEXT NOT NULL,
     indirizzo TEXT NOT NULL,
     stato TEXT DEFAULT 'Attiva',
-    gestoreId UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT
+    gestoreid UUID NOT NULL REFERENCES users(id) ON DELETE RESTRICT
 );
 
 -- Corsi
 CREATE TABLE corsi (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    strutturaId UUID NOT NULL REFERENCES strutture(id) ON DELETE CASCADE,
-    coachId UUID REFERENCES coaches(id) ON DELETE SET NULL,
+    strutturaid UUID NOT NULL REFERENCES strutture(id) ON DELETE CASCADE,
+    coachid UUID REFERENCES coaches(id) ON DELETE SET NULL,
     nome TEXT NOT NULL,
-    dataOra TIMESTAMP WITH TIME ZONE NOT NULL,
-    capacitaMassima INT NOT NULL CHECK (capacitaMassima > 0),
-    postiOccupati INT DEFAULT 0 CHECK (postiOccupati >= 0),
+    dataora TIMESTAMP WITH TIME ZONE NOT NULL,
+    capacitamassima INT NOT NULL CHECK (capacitamassima > 0),
+    postioccupati INT DEFAULT 0 CHECK (postioccupati >= 0),
     durata INT NOT NULL -- in minutes
 );
 
 -- Lista Attesa (R6 fallback)
 CREATE TABLE lista_attesa (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    corsoId UUID NOT NULL REFERENCES corsi(id) ON DELETE CASCADE,
-    userId UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    corsoid UUID NOT NULL REFERENCES corsi(id) ON DELETE CASCADE,
+    userid UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     posizione INT NOT NULL CHECK (posizione > 0),
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(corsoId, userId)
+    UNIQUE(corsoid, userid)
 );
 
 -- Prenotazioni
 CREATE TABLE prenotazioni (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    userId UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    coachId UUID REFERENCES coaches(id) ON DELETE CASCADE,
-    corsoId UUID REFERENCES corsi(id) ON DELETE CASCADE,
-    strutturaId UUID REFERENCES strutture(id) ON DELETE CASCADE,
-    dataOra TIMESTAMP WITH TIME ZONE NOT NULL,
+    userid UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    coachid UUID REFERENCES coaches(id) ON DELETE CASCADE,
+    corsoid UUID REFERENCES corsi(id) ON DELETE CASCADE,
+    strutturaid UUID REFERENCES strutture(id) ON DELETE CASCADE,
+    dataora TIMESTAMP WITH TIME ZONE NOT NULL,
     stato prenotazione_stato_enum DEFAULT 'CONFERMATA',
-    importoTotale DECIMAL NOT NULL,
+    importototale DECIMAL NOT NULL,
     rimborso DECIMAL
 );
 
 -- Workouts
 CREATE TABLE workouts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    userId UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    userid UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     tipo TEXT NOT NULL,
-    dataOra TIMESTAMP WITH TIME ZONE NOT NULL,
+    dataora TIMESTAMP WITH TIME ZONE NOT NULL,
     durata INT NOT NULL,
     obiettivo TEXT,
     stato workout_stato_enum DEFAULT 'PIANIFICATA',
-    percezionesSforzo INT CHECK (percezionesSforzo >= 1 AND percezionesSforzo <= 10),
+    percezionessforzo INT CHECK (percezionessforzo >= 1 AND percezionessforzo <= 10),
     note TEXT,
     distanza DECIMAL,
-    frequenzaCardiacaMedia INT,
+    frequenzacardiacamedia INT,
     calorie INT,
-    gpxTrace TEXT,
-    stravaId TEXT UNIQUE,
+    gpxtrace TEXT,
+    stravaid TEXT UNIQUE,
     sorgente TEXT NOT NULL DEFAULT 'TRACKING'
 );
 
 -- Abbonamenti
 CREATE TABLE abbonamenti (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    userId UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    strutturaId UUID REFERENCES strutture(id) ON DELETE SET NULL,
-    tipoId UUID,
+    userid UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    strutturaid UUID REFERENCES strutture(id) ON DELETE SET NULL,
+    tipoid UUID,
     stato abbonamento_stato_enum DEFAULT 'ATTIVO',
     qrCode TEXT UNIQUE,
-    dataInizio TIMESTAMP WITH TIME ZONE NOT NULL,
-    dataFine TIMESTAMP WITH TIME ZONE NOT NULL,
-    importo DECIMAL NOT NULL
+    datainizio TIMESTAMP WITH TIME ZONE NOT NULL,
+    datafine TIMESTAMP WITH TIME ZONE NOT NULL,
+    importo DECIMAL NOT NULL,
+    rinnovoautomatico BOOLEAN DEFAULT false
 );
 
 -- Pagamenti
 CREATE TABLE pagamenti (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    userId UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    abbonamentoId UUID REFERENCES abbonamenti(id) ON DELETE SET NULL,
+    userid UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    abbonamentoid UUID REFERENCES abbonamenti(id) ON DELETE SET NULL,
     importo DECIMAL NOT NULL,
     valuta TEXT DEFAULT 'eur',
     stato pagamento_stato_enum DEFAULT 'IN_ATTESA',
-    stripePaymentIntentId TEXT UNIQUE,
+    stripepaymentintentid TEXT UNIQUE,
     metodo TEXT,
-    createdAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    createdat TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Audit Log (R1)
+-- Coupon (R4)
+CREATE TABLE coupon (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    codice TEXT UNIQUE NOT NULL,
+    strutturaid UUID NOT NULL REFERENCES strutture(id) ON DELETE CASCADE,
+    tipoabbonamentoid UUID NOT NULL,
+    percentualesconto INT NOT NULL CHECK (percentualesconto > 0 AND percentualesconto <= 100),
+    monouso BOOLEAN DEFAULT true,
+    scadenza TIMESTAMP WITH TIME ZONE NOT NULL
+);
+
+-- Storico uso coupon (R4 per monouso)
+CREATE TABLE storico_uso_coupon (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    couponid UUID NOT NULL REFERENCES coupon(id) ON DELETE CASCADE,
+    userid UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    usatoat TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    UNIQUE(couponid, userid)
+);
+
+-- Audit Log (R10 esteso)
 CREATE TABLE audit_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    coachId UUID NOT NULL REFERENCES coaches(id) ON DELETE CASCADE,
-    sessioneId UUID NOT NULL,
-    vecchiaDataOra TIMESTAMP WITH TIME ZONE NOT NULL,
-    nuovaDataOra TIMESTAMP WITH TIME ZONE NOT NULL,
-    motivazione TEXT NOT NULL,
+    operazione TEXT NOT NULL,
+    risorsaid UUID NOT NULL,
+    attoreid UUID NOT NULL,
+    dettagli JSONB,
     timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Reports
 CREATE TABLE reports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    userId UUID REFERENCES users(id) ON DELETE CASCADE,
-    strutturaId UUID REFERENCES strutture(id) ON DELETE CASCADE,
+    userid UUID REFERENCES users(id) ON DELETE CASCADE,
+    strutturaid UUID REFERENCES strutture(id) ON DELETE CASCADE,
     periodo TEXT NOT NULL,
     tipo TEXT NOT NULL,
-    distanzaTotale DECIMAL,
-    tempoTotaleMinuti INT,
-    ritmoMedio DECIMAL,
-    incassoTotale DECIMAL,
-    accessiGiornalieri INT,
-    abbonamentiAttivi INT,
+    distanzatotale DECIMAL,
+    tempototaleminuti INT,
+    ritmomedio DECIMAL,
+    incassototale DECIMAL,
+    accessigiornalieri INT,
+    abbonamentiattivi INT,
     formato TEXT NOT NULL,
-    generatoAt TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    generatoat TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- 3. Row Level Security (RLS) Policies (Examples)
@@ -166,6 +207,6 @@ CREATE POLICY "Users can view own profile" ON users FOR SELECT USING (auth.uid()
 CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (auth.uid() = id);
 
 -- Users can read/write their own workouts
-CREATE POLICY "Users view own workouts" ON workouts FOR SELECT USING (auth.uid() = userId);
-CREATE POLICY "Users insert own workouts" ON workouts FOR INSERT WITH CHECK (auth.uid() = userId);
-CREATE POLICY "Users update own workouts" ON workouts FOR UPDATE USING (auth.uid() = userId);
+CREATE POLICY "Users view own workouts" ON workouts FOR SELECT USING (auth.uid() = userid);
+CREATE POLICY "Users insert own workouts" ON workouts FOR INSERT WITH CHECK (auth.uid() = userid);
+CREATE POLICY "Users update own workouts" ON workouts FOR UPDATE USING (auth.uid() = userid);

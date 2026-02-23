@@ -25,17 +25,17 @@ const CreaStrutturaSchema = z.object({
     cun: z.string().min(1),
     denominazione: z.string().min(1),
     indirizzo: z.string().min(1),
-    gestoreId: z.string().uuid(),
+    gestoreid: z.string().uuid(),
 });
 
 const CreaCorsoSchema = z.object({
-    strutturaId: z.string().uuid(),
+    strutturaid: z.string().uuid(),
     nome: z.string().min(1),
     descrizione: z.string().optional(),
-    dataOra: z.string().datetime(),
-    capacitaMassima: z.number().int().positive(),
+    dataora: z.string().datetime(),
+    capacitamassima: z.number().int().positive(),
     durata: z.number().int().positive(),
-    coachId: z.string().uuid().optional(),
+    coachid: z.string().uuid().optional(),
 });
 
 // POST /api/gyms – Crea Struttura (FR5, ADMIN only – guard in middleware)
@@ -51,12 +51,12 @@ export async function POST(req: NextRequest) {
             const parsed = CreaCorsoSchema.safeParse(body);
             if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
             const corso = await service.creaCorso({
-                strutturaId: parsed.data.strutturaId,
+                strutturaid: parsed.data.strutturaid,
                 nome: parsed.data.nome,
-                dataOra: parsed.data.dataOra,
-                capacitaMassima: parsed.data.capacitaMassima,
+                dataora: parsed.data.dataora,
+                capacitamassima: parsed.data.capacitamassima,
                 durata: parsed.data.durata,
-                coachId: parsed.data.coachId,
+                coachid: parsed.data.coachid,
             });
             return NextResponse.json(corso, { status: 201 });
         }
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
             parsed.data.cun,
             parsed.data.denominazione,
             parsed.data.indirizzo,
-            parsed.data.gestoreId
+            parsed.data.gestoreid
         );
         return NextResponse.json(struttura, { status: 201 });
     } catch (err: unknown) {
@@ -77,27 +77,27 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// GET /api/gyms?strutturaId=xxx – Lista corsi (FR6)
+// GET /api/gyms?strutturaid=xxx – Lista corsi (FR6)
 export async function GET(req: NextRequest) {
-    const strutturaId = req.nextUrl.searchParams.get("strutturaId");
-    if (!strutturaId) return NextResponse.json({ error: "strutturaId obbligatorio" }, { status: 400 });
+    const strutturaid = req.nextUrl.searchParams.get("strutturaid");
+    if (!strutturaid) return NextResponse.json({ error: "strutturaid obbligatorio" }, { status: 400 });
     try {
         const service = buildService();
-        const corsi = await service.getCorsiStruttura(strutturaId);
+        const corsi = await service.getCorsiStruttura(strutturaid);
         return NextResponse.json(corsi);
     } catch (err: unknown) {
         return NextResponse.json({ error: String(err) }, { status: 500 });
     }
 }
 
-// DELETE /api/gyms?corsoId=xxx – Cancella corso (FR26, GESTORE)
+// DELETE /api/gyms?corsoid=xxx – Cancella corso (FR26, GESTORE)
 export async function DELETE(req: NextRequest) {
-    const corsoId = req.nextUrl.searchParams.get("corsoId");
-    const gestoreId = req.headers.get("x-user-id");   // iniettato dal middleware RBAC
-    if (!corsoId || !gestoreId) return NextResponse.json({ error: "Parametri mancanti." }, { status: 400 });
+    const corsoid = req.nextUrl.searchParams.get("corsoid");
+    const gestoreid = req.headers.get("x-user-id");   // iniettato dal middleware RBAC
+    if (!corsoid || !gestoreid) return NextResponse.json({ error: "Parametri mancanti." }, { status: 400 });
     try {
         const service = buildService();
-        await service.cancellaCorso(corsoId, gestoreId);
+        await service.cancellaCorso(corsoid, gestoreid);
         return NextResponse.json({ message: "Corso cancellato e utenti notificati." });
     } catch (err: unknown) {
         return NextResponse.json({ error: String(err) }, { status: 400 });

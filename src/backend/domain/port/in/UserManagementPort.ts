@@ -9,9 +9,9 @@ import { RuoloEnum } from "@/backend/domain/model/enums";
 
 export interface UserManagementPort {
     registraUtente(email: string, password: string, nome: string, cognome: string, ruolo: RuoloEnum): Promise<User>;
-    getUtente(userId: string): Promise<User>;
-    aggiornaUtente(userId: string, aggiornamenti: Partial<User>): Promise<User>;
-    eliminaUtente(userId: string): Promise<void>;
-    associaCoach(userId: string, coachId: string): Promise<void>;
-    aggiornaParametriFisici(userId: string, peso: number, altezza: number): Promise<User>;
+    getUtente(userid: string): Promise<User>;
+    aggiornaUtente(userid: string, aggiornamenti: Partial<User>): Promise<User>;
+    eliminaUtente(userid: string): Promise<void>;
+    associaCoach(userid: string, coachid: string): Promise<void>;
+    aggiornaParametriFisici(userid: string, peso: number, altezza: number): Promise<User>;
 }

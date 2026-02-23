@@ -16,57 +16,57 @@ export class CreateReportManagerService implements ReportManagementPort {
   ) { }
 
   // ─── FR12: Report Utente ──────────────────────────────────────────────────
-  async generaReportUtente(userId: string, periodo: string, tipo: string): Promise<Report> {
+  async generaReportUtente(userid: string, periodo: string, tipo: string): Promise<Report> {
     // TODO (dopo collegamento Supabase): sostituire con query reali su tabella workouts
     // SELECT SUM(distanza), SUM(durata), AVG(distanza/durata) FROM workouts
-    // WHERE userId = $userId AND dataOra >= $periodoStart AND dataOra <= $periodoFine
+    // WHERE userid = $userid AND dataora >= $periodoStart AND dataora <= $periodoFine
     const report = await this.reportRepo.save({
-      userId,
+      userid,
       periodo,
       tipo: "UTENTE",
-      distanzaTotale: 0,       // TODO: SUM(workout.distanza)
-      tempoTotaleMinuti: 0,    // TODO: SUM(workout.durata)
-      ritmoMedio: 0,           // TODO: tempoTotale / distanzaTotale
+      distanzatotale: 0,       // TODO: SUM(workout.distanza)
+      tempototaleminuti: 0,    // TODO: SUM(workout.durata)
+      ritmomedio: 0,           // TODO: tempoTotale / distanzatotale
       formato: "PDF",
-      generatoAt: new Date().toISOString(),
+      generatoat: new Date().toISOString(),
     });
     return report;
   }
 
   // ─── FR13: Report Coach ───────────────────────────────────────────────────
-  async generaReportCoach(coachId: string, periodo: string): Promise<Report> {
+  async generaReportCoach(coachid: string, periodo: string): Promise<Report> {
     // TODO (dopo collegamento Supabase): query reale
-    // SELECT COUNT(DISTINCT userId) FROM prenotazioni WHERE coachId = $coachId
+    // SELECT COUNT(DISTINCT userid) FROM prenotazioni WHERE coachid = $coachid
     // JOIN workouts per frequenza e progressi
-    const atleti = await this.userRepo.findByCoachId(coachId);
+    const atleti = await this.userRepo.findByCoachId(coachid);
 
     const report = await this.reportRepo.save({
-      userId: coachId,
+      userid: coachid,
       periodo,
       tipo: "COACH",
       utentiSeguiti: atleti.length,
-      tempoTotaleMinuti: 0,    // TODO: SUM(workout.durata) degli atleti seguiti nel periodo
+      tempototaleminuti: 0,    // TODO: SUM(workout.durata) degli atleti seguiti nel periodo
       frequenzaMediaCorsi: 0,  // TODO: COUNT(prenotazioni) / periodoGiorni
       formato: "PDF",
-      generatoAt: new Date().toISOString(),
+      generatoat: new Date().toISOString(),
     });
     return report;
   }
 
   // ─── FR14: Report Gestore ─────────────────────────────────────────────────
-  async generaReportGestore(strutturaId: string, periodo: string): Promise<Report> {
+  async generaReportGestore(strutturaid: string, periodo: string): Promise<Report> {
     // TODO (dopo collegamento Supabase): query reale
-    // SELECT SUM(importo) FROM pagamenti JOIN abbonamenti WHERE strutturaId = $strutturaId
-    // SELECT COUNT(*) FROM prenotazioni WHERE strutturaId = $strutturaId AND dataOra IN periodo
+    // SELECT SUM(importo) FROM pagamenti JOIN abbonamenti WHERE strutturaid = $strutturaid
+    // SELECT COUNT(*) FROM prenotazioni WHERE strutturaid = $strutturaid AND dataora IN periodo
     const report = await this.reportRepo.save({
-      strutturaId,
+      strutturaid,
       periodo,
       tipo: "GESTORE",
-      incassoTotale: 0,        // TODO: SUM(pagamento.importo) per struttura nel periodo
-      accessiGiornalieri: 0,   // TODO: AVG(accessi per giorno) nel periodo
-      abbonamentiAttivi: 0,    // TODO: COUNT(abbonamenti ATTIVI) per struttura
+      incassototale: 0,        // TODO: SUM(pagamento.importo) per struttura nel periodo
+      accessigiornalieri: 0,   // TODO: AVG(accessi per giorno) nel periodo
+      abbonamentiattivi: 0,    // TODO: COUNT(abbonamenti ATTIVI) per struttura
       formato: "CSV",
-      generatoAt: new Date().toISOString(),
+      generatoat: new Date().toISOString(),
     });
     return report;
   }
@@ -81,10 +81,10 @@ export class CreateReportManagerService implements ReportManagementPort {
       tipo: "ADMIN",
       totaleStrutture: 0,      // TODO: COUNT(strutture) FROM strutture
       totaleUtenti,
-      abbonamentiAttivi: 0,    // TODO: COUNT(abbonamenti ATTIVI) globale
+      abbonamentiattivi: 0,    // TODO: COUNT(abbonamenti ATTIVI) globale
       ricavoAggregato: 0,      // TODO: SUM(pagamenti.importo) globale nel periodo
       formato: "CSV",
-      generatoAt: new Date().toISOString(),
+      generatoat: new Date().toISOString(),
     });
     return report;
   }

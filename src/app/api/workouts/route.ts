@@ -19,9 +19,9 @@ function buildService() {
 
 // ─── Validation schema (Zod) ─────────────────────────────────────────────────
 const PianificaSchema = z.object({
-    userId: z.string().uuid(),
+    userid: z.string().uuid(),
     tipo: z.string().min(1),
-    dataOra: z.string().datetime(),           // ISO 8601
+    dataora: z.string().datetime(),           // ISO 8601
     durata: z.number().int().positive(),
     obiettivo: z.string().optional(),
 });
@@ -36,10 +36,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
         }
 
-        const { userId, tipo, dataOra, durata, obiettivo } = parsed.data;
+        const { userid, tipo, dataora, durata, obiettivo } = parsed.data;
         const service = buildService();
         const workout = await service.pianificaSessione(
-            userId, tipo, new Date(dataOra), durata, obiettivo
+            userid, tipo, new Date(dataora), durata, obiettivo
         );
 
         return NextResponse.json(workout, { status: 201 });
@@ -49,16 +49,16 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// ─── GET /api/workouts?userId=xxx ── lista sessioni utente ───────────────────
+// ─── GET /api/workouts?userid=xxx ── lista sessioni utente ───────────────────
 export async function GET(req: NextRequest) {
     try {
-        const userId = req.nextUrl.searchParams.get("userId");
-        if (!userId) {
-            return NextResponse.json({ error: "userId obbligatorio" }, { status: 400 });
+        const userid = req.nextUrl.searchParams.get("userid");
+        if (!userid) {
+            return NextResponse.json({ error: "userid obbligatorio" }, { status: 400 });
         }
 
         const service = buildService();
-        const workouts = await service.getSessioniUtente(userId);
+        const workouts = await service.getSessioniUtente(userid);
 
         return NextResponse.json(workouts);
     } catch (err: unknown) {

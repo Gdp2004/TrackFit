@@ -16,19 +16,19 @@ interface BookingModalProps {
 
 export function BookingModal({ coach, open, onClose }: BookingModalProps) {
     const { user } = useAuth();
-    const [dataOra, setDataOra] = useState("");
+    const [dataora, setDataOra] = useState("");
     const [success, setSuccess] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     const handleBook = async () => {
-        if (!user || !dataOra) { setError("Seleziona data e ora"); return; }
+        if (!user || !dataora) { setError("Seleziona data e ora"); return; }
         setLoading(true); setError(null);
         try {
             const res = await fetch("/api/coaches", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userId: user.id, coachId: coach.id, dataOra: new Date(dataOra).toISOString() }),
+                body: JSON.stringify({ userid: user.id, coachid: coach.id, dataora: new Date(dataora).toISOString() }),
             });
             if (!res.ok) { const d = await res.json(); setError(d.error ?? "Errore"); setLoading(false); return; }
             setSuccess(true);
@@ -55,7 +55,7 @@ export function BookingModal({ coach, open, onClose }: BookingModalProps) {
                         label="Data e ora"
                         type="datetime-local"
                         min={new Date(Date.now() + 3600000).toISOString().slice(0, 16)}
-                        value={dataOra}
+                        value={dataora}
                         onChange={(e) => setDataOra(e.target.value)}
                     />
                     {error && (

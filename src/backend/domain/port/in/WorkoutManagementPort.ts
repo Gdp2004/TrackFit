@@ -12,9 +12,9 @@ export interface WorkoutManagementPort {
      * Il sistema programma un push-reminder 10 minuti prima.
      */
     pianificaSessione(
-        userId: string,
+        userid: string,
         tipo: string,
-        dataOra: Date,
+        dataora: Date,
         durata: number,
         obiettivo?: string
     ): Promise<Workout>;
@@ -32,5 +32,5 @@ export interface WorkoutManagementPort {
     /** UC5 – Sincronizza sessione locale con il backend Supabase. */
     sincronizzaSessione(workoutId: string): Promise<void>;
 
-    getSessioniUtente(userId: string): Promise<Workout[]>;
+    getSessioniUtente(userid: string): Promise<Workout[]>;
 }

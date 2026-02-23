@@ -7,7 +7,7 @@
 import { Prenotazione, User } from "@/backend/domain/model/types";
 
 export interface CoachManagementPort {
-    prenotaSlotCoach(userId: string, coachId: string, dataOra: Date): Promise<Prenotazione>;
-    modificaPianoAtleta(coachId: string, sessioneId: string, nuovaDataOra: Date, motivazione: string): Promise<void>; // OCL R1
-    getRosterAtleti(coachId: string): Promise<User[]>;
+    prenotaSlotCoach(userid: string, coachid: string, dataora: Date): Promise<Prenotazione>;
+    modificaPianoAtleta(coachid: string, sessioneid: string, nuovadataora: Date, motivazione: string): Promise<void>; // OCL R1
+    getRosterAtleti(coachid: string): Promise<User[]>;
 }
