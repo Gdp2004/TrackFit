@@ -35,19 +35,17 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
     if (couponCode) {
       const coupon = await this.couponRepo.findByCodice(couponCode);
       if (!coupon) throw new Error("Coupon non valido o inesistente.");
-      if (coupon.usato && coupon.monouso) throw new Error("Coupon già utilizzato.");
       if (new Date(coupon.scadenza) < new Date()) throw new Error("Coupon scaduto.");
       if (coupon.tipoabbonamentoid !== tipoid) throw new Error("R4: Coupon non valido per questo tipo di abbonamento.");
 
-      // R4: verifica mono-uso per utente
-      const giaUsatoDaQuestoUtente = await this.couponRepo.existsUsoByUtente(coupon.id, userid);
-      if (giaUsatoDaQuestoUtente) throw new Error("R4: Coupon già utilizzato da questo utente.");
+      // R4: Riscatto atomico coupon (previene Race Conditions su monouso o doppio click simultaneo)
+      const redentoConSuccesso = await this.couponRepo.redeemCoupon(coupon.id, userid, coupon.monouso);
+      if (!redentoConSuccesso) {
+        throw new Error("R4: Il coupon è già stato utilizzato o non puoi riutilizzarlo.");
+      }
 
       // R5: Sconto applicato solo alla quota abbonamento
       importo = importo * (1 - coupon.percentualesconto / 100);
-
-      // Marca il coupon come usato (R4: monouso)
-      await this.couponRepo.marcaUsato(coupon.id, userid);
 
       // R10: Audit uso coupon
       await this.auditRepo.registra({

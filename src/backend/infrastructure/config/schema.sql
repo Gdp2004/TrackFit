@@ -159,6 +159,7 @@ CREATE TABLE coupon (
     tipoabbonamentoid UUID NOT NULL,
     percentualesconto INT NOT NULL CHECK (percentualesconto > 0 AND percentualesconto <= 100),
     monouso BOOLEAN DEFAULT true,
+    usato BOOLEAN DEFAULT false,
     scadenza TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
@@ -210,3 +211,72 @@ CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (auth.uid
 CREATE POLICY "Users view own workouts" ON workouts FOR SELECT USING (auth.uid() = userid);
 CREATE POLICY "Users insert own workouts" ON workouts FOR INSERT WITH CHECK (auth.uid() = userid);
 CREATE POLICY "Users update own workouts" ON workouts FOR UPDATE USING (auth.uid() = userid);
+
+-- ============================================================
+-- 4. Funzioni RPC ed Estensioni (Ottimizzazione & Concorrenza)
+-- ============================================================
+
+-- R9: Fuzzy Search extension
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- RPC per ricerca fuzzy Strutture (sposta il calcolo Dice in DB)
+CREATE OR REPLACE FUNCTION match_strutture(str_denominazione TEXT, str_indirizzo TEXT, similarity_threshold FLOAT)
+RETURNS TABLE (id UUID, denominazione TEXT, indirizzo TEXT, similarity FLOAT) AS $$
+BEGIN
+    RETURN QUERY 
+    SELECT s.id, s.denominazione, s.indirizzo, 
+           (similarity(s.denominazione, str_denominazione) + similarity(s.indirizzo, str_indirizzo)) / 2.0 AS similarity
+    FROM strutture s
+    WHERE (similarity(s.denominazione, str_denominazione) + similarity(s.indirizzo, str_indirizzo)) / 2.0 >= similarity_threshold;
+END;
+$$ LANGUAGE plpgsql;
+
+-- RPC per prenotazione atomica (Previene overbooking)
+CREATE OR REPLACE FUNCTION incrementa_posti_corso(p_corso_id UUID)
+RETURNS boolean AS $$
+DECLARE
+    affected_rows INT;
+BEGIN
+    UPDATE corsi 
+    SET postioccupati = postioccupati + 1 
+    WHERE id = p_corso_id AND postioccupati < capacitamassima;
+    
+    GET DIAGNOSTICS affected_rows = ROW_COUNT;
+    IF affected_rows > 0 THEN
+        RETURN true;
+    ELSE
+        RETURN false; -- Se ritorna false, il corso è pieno
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- RPC per riscatto coupon atomico (Previene usi simultanei concorrenti)
+CREATE OR REPLACE FUNCTION redeem_coupon(p_coupon_id UUID, p_user_id UUID, is_monouso BOOLEAN)
+RETURNS boolean AS $$
+DECLARE
+    affected_rows INT;
+BEGIN
+    -- 1. Se è monouso (globale), deve aggiornare la tabella coupon SOLO se usato è false
+    IF is_monouso THEN
+        UPDATE coupon 
+        SET usato = true
+        WHERE id = p_coupon_id AND usato = false;
+        
+        GET DIAGNOSTICS affected_rows = ROW_COUNT;
+        -- Se non ha aggiornato nulla, significa che era già usato
+        IF affected_rows = 0 THEN
+            RETURN false;
+        END IF;
+    END IF;
+    
+    -- 2. Anche se non è monouso globale, un utente lo può usare 1 sola volta
+    -- L'insert fallirà (sollevando eccezione) se la coppia UNIQUE(couponid, userid) esiste già
+    BEGIN
+        INSERT INTO storico_uso_coupon(couponid, userid) VALUES (p_coupon_id, p_user_id);
+    EXCEPTION WHEN unique_violation THEN
+        RETURN false;
+    END;
+
+    RETURN true;
+END;
+$$ LANGUAGE plpgsql;

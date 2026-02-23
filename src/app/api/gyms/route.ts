@@ -38,13 +38,35 @@ const CreaCorsoSchema = z.object({
     coachid: z.string().uuid().optional(),
 });
 
+const OnboardCoachSchema = z.object({
+    strutturaid: z.string().uuid(),
+    emailCoach: z.string().email(),
+});
+
 // POST /api/gyms – Crea Struttura (FR5, ADMIN only – guard in middleware)
 //               – oppure Crea Corso (FR6, GESTORE only) se action=corso
+//               – oppure Onboard Coach (UC2, GESTORE/ADMIN) se action=onboard-coach
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();
         const action = req.nextUrl.searchParams.get("action");
         const service = buildService();
+
+        if (action === "onboard-coach") {
+            // ─── UC2: Onboard Coach ───────────────────────────────────────────
+            const parsed = OnboardCoachSchema.safeParse(body);
+            if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+
+            // L\'email del gestore è ricavata preferibilmente dal token, ma qui usiamo x-user-id come traccia
+            const tokenUtenteId = req.headers.get("x-user-id") || "SISTEMA";
+
+            await service.onboardCoach(
+                parsed.data.strutturaid,
+                tokenUtenteId,
+                parsed.data.emailCoach
+            );
+            return NextResponse.json({ message: "Coach creato e email inviata." }, { status: 201 });
+        }
 
         if (action === "corso") {
             // ─── FR6: Crea corso ──────────────────────────────────────────────

@@ -84,9 +84,8 @@ export class CreateWorkoutManagerService implements WorkoutManagementPort {
     }
 
     async importaAttivitaEsterna(userid: string, source: string, externalId: string, data: Partial<Workout>): Promise<Workout> {
-        // UC5 External Import Deduplication
-        const esistenti = await this.workoutRepo.findByUserId(userid);
-        const duplicato = esistenti.find(w => w.stravaid === externalId);
+        // UC5 External Import Deduplication spostata dal server a DB
+        const duplicato = await this.workoutRepo.findByStravaId(externalId);
         if (duplicato) throw new Error("Attività già importata nel sistema.");
 
         return this.workoutRepo.save({

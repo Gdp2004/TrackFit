@@ -13,4 +13,5 @@ export interface GymManagementPort {
     prenotaCorsoPalestra(userid: string, corsoid: string): Promise<Prenotazione>;
     cancellaPrenotazione(prenotazioneId: string): Promise<void>;
     getCorsiStruttura(strutturaid: string): Promise<Corso[]>;
+    onboardCoach(strutturaid: string, emailGestore: string, emailCoach: string): Promise<void>; // UC2
 }

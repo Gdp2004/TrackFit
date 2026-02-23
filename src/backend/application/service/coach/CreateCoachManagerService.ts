@@ -9,31 +9,80 @@ import { CoachRepositoryPort } from "@/backend/domain/port/out/CoachRepositoryPo
 import { UserRepositoryPort } from "@/backend/domain/port/out/UserRepositoryPort";
 import { NotificationServicePort } from "@/backend/domain/port/out/NotificationServicePort";
 import { AuditLogRepositoryPort } from "@/backend/domain/port/out/AuditLogRepositoryPort";
+import { PaymentGatewayPort } from "@/backend/domain/port/out/PaymentGatewayPort";
+import { PaymentRepositoryPort } from "@/backend/domain/port/out/PaymentRepositoryPort";
 import { Prenotazione, User } from "@/backend/domain/model/types";
-import { StatoPrenotazioneEnum } from "@/backend/domain/model/enums";
+import { StatoPagamentoEnum, StatoPrenotazioneEnum } from "@/backend/domain/model/enums";
 
 export class CreateCoachManagerService implements CoachManagementPort {
   constructor(
     private readonly coachRepo: CoachRepositoryPort,
     private readonly userRepo: UserRepositoryPort,
     private readonly notificationService: NotificationServicePort,
-    private readonly auditRepo: AuditLogRepositoryPort
+    private readonly auditRepo: AuditLogRepositoryPort,
+    private readonly paymentGateway?: PaymentGatewayPort,
+    private readonly paymentRepo?: PaymentRepositoryPort
   ) { }
 
-  // ─── Prenotazione slot coach ──────────────────────────────────────────────────
-  async prenotaSlotCoach(userid: string, coachid: string, dataora: Date): Promise<Prenotazione> {
+  // ─── UC7/UC16: Prenotazione slot coach (con Pagamento) ──────────────────────
+  async prenotaSlotCoach(userid: string, coachid: string, dataora: Date): Promise<Prenotazione & { clientSecret?: string }> {
     if (dataora <= new Date()) throw new Error("dataora deve essere nel futuro.");
 
     const slotEsistente = await this.coachRepo.findPrenotazioneAttivaBySlot(coachid, dataora);
     if (slotEsistente) throw new Error("Slot già occupato per questo coach.");
 
-    return this.coachRepo.savePrenotazione({
+    const importo = 30.0; // Costo fisso per slot coach (esempio)
+
+    const prenotazione = await this.coachRepo.savePrenotazione({
       userid,
       coachid,
       dataora: dataora.toISOString(),
-      stato: StatoPrenotazioneEnum.CONFERMATA,
-      importototale: 30.0,
+      stato: StatoPrenotazioneEnum.IN_ATTESA, // UC7: Wait for payment
+      importototale: importo,
     });
+
+    let clientSecret: string | undefined;
+
+    // Genera l'intento di pagamento
+    if (this.paymentGateway && this.paymentRepo) {
+      const intent = await this.paymentGateway.creaIntentPagamento(importo, 'eur', {
+        userid,
+        coachid,
+        prenotazioneId: prenotazione.id!
+      });
+
+      await this.paymentRepo.save({
+        userid,
+        importo,
+        valuta: 'eur',
+        stato: StatoPagamentoEnum.IN_ATTESA,
+        stripepaymentintentid: intent.id,
+        metodo: 'card'
+      });
+
+      clientSecret = intent.clientSecret;
+    } else {
+      // Fallback for testing without Stripe: auto-confirm
+      await this.coachRepo.updatePrenotazione(prenotazione.id!, { stato: StatoPrenotazioneEnum.CONFERMATA });
+      prenotazione.stato = StatoPrenotazioneEnum.CONFERMATA;
+    }
+
+    return { ...prenotazione, clientSecret };
+  }
+
+  // ─── UC7/UC16: Conferma/Annulla Pagamento ──────────────────────────────────
+  async confermaPagamentoPrenotazione(sessioneid: string, success: boolean): Promise<void> {
+    const prenotazione = await this.coachRepo.findPrenotazioneById(sessioneid);
+    if (!prenotazione) throw new Error("Prenotazione non trovata.");
+
+    if (success) {
+      // UC7: Transazione approvata
+      await this.coachRepo.updatePrenotazione(sessioneid, { stato: StatoPrenotazioneEnum.CONFERMATA });
+      // TODO: Update Payment in paymentRepo (handled by webhook usually, but mocked here)
+    } else {
+      // UC16: Transazione negata -> libera le risorse
+      await this.coachRepo.updatePrenotazione(sessioneid, { stato: StatoPrenotazioneEnum.CANCELLATA });
+    }
   }
 
   // ─── R1 + R2: Modifica piano atleta ──────────────────────────────────────────
@@ -66,14 +115,15 @@ export class CreateCoachManagerService implements CoachManagementPort {
     });
 
     // R10: Salva audit log della modifica
-    await this.coachRepo.saveAuditLog(
+    const auditLogPromise = this.coachRepo.saveAuditLog(
       coachid,
       sessioneid,
       vecchiadataora,
       nuovadataora,
       motivazione
     );
-    await this.auditRepo.registra({
+
+    const auditSystemPromise = this.auditRepo.registra({
       utenteId: coachid,
       azione: "MODIFICA_PIANO_ATLETA",
       datiJSON: {
@@ -86,28 +136,32 @@ export class CreateCoachManagerService implements CoachManagementPort {
     });
 
     // R2: Invia email all'atleta con riepilogo della modifica
-    const atleta = await this.userRepo.findById(prenotazione.userid!);
-    if (atleta) {
-      await this.notificationService.inviaEmail(
-        atleta.email,
-        "Modifica piano allenamento",
-        {
-          atletaNome: `${atleta.nome} ${atleta.cognome}`,
-          vecchiadataora: vecchiadataora.toISOString(),
-          nuovadataora: nuovadataora.toISOString(),
-          motivazione,
-          riferimentoPiano: sessioneid,
-        }
-      );
+    const notifyPromise = this.userRepo.findById(prenotazione.userid!).then(atleta => {
+      if (atleta) {
+        return Promise.all([
+          this.notificationService.inviaEmail(
+            atleta.email,
+            "Modifica piano allenamento",
+            {
+              atletaNome: `${atleta.nome} ${atleta.cognome}`,
+              vecchiadataora: vecchiadataora.toISOString(),
+              nuovadataora: nuovadataora.toISOString(),
+              motivazione,
+              riferimentoPiano: sessioneid,
+            }
+          ),
+          this.notificationService.inviaNotificaRealtime(prenotazione.userid!, {
+            titolo: "Piano allenamento modificato",
+            messaggio: `Il tuo allenamento è stato spostato al ${nuovadataora.toLocaleDateString("it-IT")}. Motivazione: ${motivazione}`,
+            tipo: "modifica_piano",
+            dati: { nuovadataora: nuovadataora.toISOString(), motivazione },
+          })
+        ]);
+      }
+    });
 
-      // Notifica in-app
-      await this.notificationService.inviaNotificaRealtime(prenotazione.userid!, {
-        titolo: "Piano allenamento modificato",
-        messaggio: `Il tuo allenamento è stato spostato al ${nuovadataora.toLocaleDateString("it-IT")}. Motivazione: ${motivazione}`,
-        tipo: "modifica_piano",
-        dati: { nuovadataora: nuovadataora.toISOString(), motivazione },
-      });
-    }
+    // Esegui tutte le operazioni di I/O indipendenti in parallelo
+    await Promise.all([auditLogPromise, auditSystemPromise, notifyPromise]);
   }
 
   // ─── FR13: Roster atleti del coach ───────────────────────────────────────────

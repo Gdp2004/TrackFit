@@ -5,13 +5,19 @@ import { CoachSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supab
 import { UserSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/UserSupabaseAdapter";
 import { SupabaseRealtimeNotificationAdapter } from "@/backend/infrastructure/adapter/out/notification/SupabaseRealtimeNotificationAdapter";
 import { AuditLogSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/AuditLogSupabaseAdapter";
+import { StripeAdapter } from "@/backend/infrastructure/adapter/out/external/StripeAdapter";
+import { PaymentSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/PaymentSupabaseAdapter";
 
 function buildService() {
     const coachRepo = new CoachSupabaseAdapter();
     const userRepo = new UserSupabaseAdapter();
     const notificationService = new SupabaseRealtimeNotificationAdapter();
     const auditRepo = new AuditLogSupabaseAdapter();
-    return new CreateCoachManagerService(coachRepo, userRepo, notificationService, auditRepo);
+    const paymentGateway = new StripeAdapter();
+    const paymentRepo = new PaymentSupabaseAdapter();
+    return new CreateCoachManagerService(
+        coachRepo, userRepo, notificationService, auditRepo, paymentGateway, paymentRepo
+    );
 }
 
 const PrenotaSchema = z.object({
@@ -68,6 +74,33 @@ export async function PUT(req: NextRequest) {
         );
 
         return NextResponse.json({ message: "Piano modificato con successo" }, { status: 200 });
+    } catch (err: any) {
+        return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+}
+
+// PATCH /api/coaches/prenotazioni - Conferma Pagamento (UC7/UC16)
+const ConfermaPagamentoSchema = z.object({
+    sessioneId: z.string().uuid(),
+    successo: z.boolean()
+});
+
+export async function PATCH(req: NextRequest) {
+    try {
+        const body = await req.json();
+        const parsed = ConfermaPagamentoSchema.safeParse(body);
+        if (!parsed.success) {
+            return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+        }
+
+        const service = buildService();
+        await service.confermaPagamentoPrenotazione(parsed.data.sessioneId, parsed.data.successo);
+
+        if (parsed.data.successo) {
+            return NextResponse.json({ message: "Prenotazione confermata." }, { status: 200 });
+        } else {
+            return NextResponse.json({ message: "Prenotazione cancellata a causa del fallimento." }, { status: 200 });
+        }
     } catch (err: any) {
         return NextResponse.json({ error: err.message }, { status: 500 });
     }

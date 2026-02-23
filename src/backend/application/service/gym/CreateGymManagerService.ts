@@ -11,7 +11,8 @@ import { SubscriptionRepositoryPort } from "@/backend/domain/port/out/Subscripti
 import { NotificationServicePort } from "@/backend/domain/port/out/NotificationServicePort";
 import { AuditLogRepositoryPort } from "@/backend/domain/port/out/AuditLogRepositoryPort";
 import { Struttura, Corso, Prenotazione } from "@/backend/domain/model/types";
-import { StatoAbbonamentoEnum, StatoPrenotazioneEnum } from "@/backend/domain/model/enums";
+import { StatoAbbonamentoEnum, StatoPrenotazioneEnum, RuoloEnum } from "@/backend/domain/model/enums";
+import { createSupabaseServerClient } from "@/backend/infrastructure/config/supabase";
 
 // ─── R9: Similarità stringa (Dice / bigramma) ────────────────────────────────
 function diceCoefficient(a: string, b: string): number {
@@ -52,17 +53,12 @@ export class CreateGymManagerService implements GymManagementPort {
     const esisteEsatta = await this.gymRepo.existsStrutturaByPivaOrCun(piva, cun);
     if (esisteEsatta) throw new Error("Vincolo R8: P.IVA o CUN già registrati nel sistema.");
 
-    // R9: Anti-duplicato fuzzy su denominazione + indirizzo
-    const tutte = await this.gymRepo.findAllStrutture();
-    for (const s of tutte) {
-      const simDen = diceCoefficient(denominazione, s.denominazione);
-      const simInd = diceCoefficient(indirizzo, s.indirizzo);
-      const scoreGlobale = (simDen + simInd) / 2;
-      if (scoreGlobale >= 0.85) {
-        throw new Error(
-          `Vincolo R9: Struttura troppo simile a "${s.denominazione}" (score: ${(scoreGlobale * 100).toFixed(0)}%). Verificare se è un duplicato.`
-        );
-      }
+    // R9: Anti-duplicato fuzzy su denominazione + indirizzo spostato logicamente su DB
+    const struttureSimili = await this.gymRepo.matchStruttureFuzzy(denominazione, indirizzo);
+    if (struttureSimili.length > 0) {
+      throw new Error(
+        `Vincolo R9: Struttura troppo simile a una esistente ("${struttureSimili[0].denominazione}"). Verificare se è un duplicato.`
+      );
     }
 
     const struttura = await this.gymRepo.saveStruttura({ piva, cun, denominazione, indirizzo, gestoreid, stato: "Attiva" });
@@ -75,6 +71,62 @@ export class CreateGymManagerService implements GymManagementPort {
     });
 
     return struttura;
+  }
+
+  // ─── UC2: Onboarding Coach ──────────────────────────────────────────────────
+  async onboardCoach(strutturaid: string, emailGestore: string, emailCoach: string): Promise<void> {
+    const supabase = createSupabaseServerClient();
+
+    // 1. Create User in Supabase Auth (Auto-confirm to allow immediate access)
+    // Note: In real production, we'd send a reset-password email. For this demo we set a random pass.
+    const tempPassword = Math.random().toString(36).slice(-8) + "A1!";
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+      email: emailCoach,
+      password: tempPassword,
+      email_confirm: true,
+      user_metadata: { nome: "Nuovo", cognome: "Coach", ruolo: RuoloEnum.COACH },
+    });
+
+    if (authError) {
+      if (authError.message.includes("already registered")) {
+        throw new Error("L'utente con questa email esiste già.");
+      }
+      throw new Error(`Errore creazione account: ${authError.message}`);
+    }
+
+    const userId = authData.user.id;
+
+    // 2. Add Coach entity mapped to Struttura
+    const { error: coachError } = await supabase.from("coaches").insert({
+      userid: userId,
+      strutturaid,
+      specializzazione: "Generale",
+      rating: 5.0
+    });
+
+    if (coachError) {
+      // Rollback auth user
+      await supabase.auth.admin.deleteUser(userId);
+      throw new Error("Errore associazione coach alla struttura.");
+    }
+
+    // 3. Send Onboarding Email (UC2 Step 6)
+    await this.notificationService.inviaEmail(
+      emailCoach,
+      "Benvenuto in TrackFit! Il tuo account Coach è pronto",
+      {
+        messaggio: `Sei stato invitato come Coach. Accedi con la tua email e la password temporanea: ${tempPassword}. Ricordati di cambiarla al primo accesso!`,
+        strutturaid
+      }
+    );
+
+    // 4. Register Audit Log (UC2 Step 7)
+    await this.auditRepo.registra({
+      utenteId: emailGestore, // Usiamo l'email gestore come identificativo attore
+      azione: "ONBOARDING_COACH",
+      datiJSON: { strutturaid, emailCoach, coachUserId: userId },
+      timestamp: new Date().toISOString(),
+    });
   }
 
   // ─── FR6/FR26: Crea corso (con notifica cancellazione) ───────────────────
@@ -123,9 +175,10 @@ export class CreateGymManagerService implements GymManagementPort {
       throw new Error("FR8: Abbonamento non attivo. Acquista un abbonamento per prenotare corsi.");
     }
 
-    // FR8/FR25: Verifica capacità
-    if (corso.postioccupati >= corso.capacitamassima) {
-      // FR25: Iscrivi alla lista d'attesa
+    // FR8/FR25: Verifica capacità in modo ATOMICO
+    const spazioneRiservato = await this.gymRepo.incrementaPostiOccupati(corsoid);
+    if (!spazioneRiservato) {
+      // FR25: Iscrivi alla lista d'attesa (se la transazione di incremento è fallita, il corso è pieno)
       const entry = await this.gymRepo.addToListaAttesa(corsoid, userid);
       await this.notificationService.inviaNotificaRealtime(userid, {
         titolo: "Corso al completo – Lista d'attesa",
@@ -145,7 +198,6 @@ export class CreateGymManagerService implements GymManagementPort {
       importototale: 0, // incluso nell'abbonamento
     });
 
-    await this.gymRepo.incrementaPostiOccupati(corsoid);
     return prenotazione;
   }
 
