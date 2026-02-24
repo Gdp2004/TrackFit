@@ -1,7 +1,7 @@
 # ===== DIPENDENZE E BUILD (Essenziali da ignorare per evitare giga di caricamento) =====
 node_modules/
 .next/
-out/
+/out/
 
 # ===== VARIABILI D'AMBIENTE (Configurazione e Segreti) =====
 .env
