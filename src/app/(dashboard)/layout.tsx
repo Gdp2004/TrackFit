@@ -9,7 +9,29 @@ export const metadata: Metadata = {
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div style={{ display: "flex", minHeight: "100dvh", background: "hsl(var(--tf-bg))" }}>
+    <div style={{ display: "flex", minHeight: "100dvh", position: "relative", overflow: "hidden" }}>
+      {/* Background image */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src="/images/backgrounds/OrangeBackground.jpg"
+        alt=""
+        aria-hidden="true"
+        style={{
+          position: "fixed", inset: 0,
+          width: "100%", height: "100%",
+          objectFit: "cover",
+          zIndex: -1,
+          opacity: 0.18,
+        }}
+      />
+      {/* Overlay scuro per mantenere leggibilità */}
+      <div style={{
+        position: "fixed", inset: 0,
+        background: "hsl(var(--tf-bg)/.82)",
+        zIndex: -1,
+      }} />
+
+      {/* Contenuto */}
       <Sidebar />
       <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <Navbar />
@@ -20,3 +42,4 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </div>
   );
 }
+

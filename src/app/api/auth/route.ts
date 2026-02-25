@@ -25,6 +25,7 @@ const RegisterSchema = z.object({
   nome: z.string().min(1),
   cognome: z.string().min(1),
   ruolo: z.enum(["UTENTE", "COACH", "GESTORE"]),
+  specializzazione: z.string().optional(),          // obbligatoria solo per COACH – validata runtime
   consensoTermini: z.literal(true, { errorMap: () => ({ message: "NFR-L3: Devi accettare i Termini di Servizio." }) }),
 });
 
@@ -93,6 +94,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const parsed = RegisterSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+
+    // Validazione aggiuntiva: specializzazione obbligatoria per COACH
+    if (parsed.data.ruolo === "COACH" && !parsed.data.specializzazione?.trim()) {
+      return NextResponse.json({ error: "Il campo specializzazione è obbligatorio per il Coach." }, { status: 400 });
+    }
+
     const service = buildUserService();
     const user = await service.registraUtente(
       parsed.data.email,
@@ -101,6 +108,21 @@ export async function POST(req: NextRequest) {
       parsed.data.cognome,
       parsed.data.ruolo as RuoloEnum
     );
+
+    // ─── Crea profilo Coach se ruolo = COACH ─────────────────────────────
+    if (parsed.data.ruolo === RuoloEnum.COACH) {
+      const supabase = createSupabaseServerClient();
+      const { error: coachError } = await supabase.from("coaches").insert({
+        userid: user.id,
+        specializzazione: parsed.data.specializzazione!.trim(),
+      });
+      if (coachError) {
+        // Log dell'errore ma non blocca la risposta – il profilo coach può essere completato dopo
+        console.error("[Auth] Impossibile creare profilo coach:", coachError.message);
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     return NextResponse.json(user, { status: 201 });
   } catch (err: unknown) {
     return NextResponse.json({ error: String(err) }, { status: 400 });

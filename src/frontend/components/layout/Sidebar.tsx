@@ -5,25 +5,77 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@frontend/contexts/AuthContext";
 import { RuoloEnum } from "@backend/domain/model/enums";
 
-type NavItem = { href: string; label: string; icon: string; roles?: RuoloEnum[] };
+type NavItem = { href: string; label: string; icon: string };
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: "⊞" },
-  { href: "/workouts", label: "Allenamenti", icon: "🏃" },
-  { href: "/coaches", label: "Coach", icon: "🎯", roles: [RuoloEnum.UTENTE, RuoloEnum.ADMIN] },
-  { href: "/gyms", label: "Palestre", icon: "🏋️" },
-  { href: "/subscription", label: "Abbonamento", icon: "🎫", roles: [RuoloEnum.UTENTE] },
-  { href: "/reports", label: "Report", icon: "📊" },
+/** Mappa ruolo → path homepage della dashboard */
+const ROLE_DASHBOARD: Record<RuoloEnum, string> = {
+  [RuoloEnum.COACH]: "/coach/dashboard",
+  [RuoloEnum.GESTORE]: "/gym/dashboard",
+  [RuoloEnum.UTENTE]: "/dashboard",
+  [RuoloEnum.ADMIN]: "/dashboard",
+};
+
+/** Voci comuni a tutti i ruoli */
+const NAV_COMMON: NavItem[] = [
   { href: "/profile", label: "Profilo", icon: "👤" },
 ];
+
+/** Voci per ruolo */
+const NAV_BY_ROLE: Record<RuoloEnum, NavItem[]> = {
+  [RuoloEnum.UTENTE]: [
+    { href: "/workouts", label: "Allenamenti", icon: "🏃" },
+    { href: "/coaches", label: "Trova Coach", icon: "🎯" },
+    { href: "/gyms", label: "Palestre", icon: "🏋️" },
+    { href: "/subscription", label: "Abbonamento", icon: "🎫" },
+    { href: "/reports", label: "Report", icon: "📊" },
+  ],
+  [RuoloEnum.COACH]: [
+    { href: "/workouts", label: "Sessioni", icon: "🏃" },
+    { href: "/coaches/atleti", label: "Miei Atleti", icon: "👥" },
+    { href: "/coaches/disponibilita", label: "Disponibilità", icon: "🗓️" },
+    { href: "/coaches/piani", label: "Piani", icon: "📋" },
+    { href: "/reports", label: "Report", icon: "📊" },
+  ],
+  [RuoloEnum.GESTORE]: [
+    { href: "/gyms/struttura", label: "Struttura", icon: "🏋️" },
+    { href: "/subscription", label: "Abbonamenti", icon: "💳" },
+    { href: "/gyms/corsi", label: "Corsi", icon: "📆" },
+    { href: "/gyms/coupon", label: "Coupon", icon: "🎟️" },
+    { href: "/reports", label: "Report", icon: "📈" },
+  ],
+  [RuoloEnum.ADMIN]: [
+    { href: "/workouts", label: "Allenamenti", icon: "🏃" },
+    { href: "/coaches", label: "Coach", icon: "🎯" },
+    { href: "/gyms", label: "Palestre", icon: "🏋️" },
+    { href: "/subscription", label: "Abbonamenti", icon: "🎫" },
+    { href: "/reports", label: "Report", icon: "📊" },
+  ],
+};
+
+/** Badge e colori per ruolo */
+const ROLE_META: Record<RuoloEnum, { label: string; color: string; accent: string }> = {
+  [RuoloEnum.UTENTE]: { label: "Atleta", color: "hsl(var(--tf-primary))", accent: "hsl(var(--tf-primary)/.15)" },
+  [RuoloEnum.COACH]: { label: "Coach", color: "hsl(var(--tf-accent))", accent: "hsl(var(--tf-accent)/.15)" },
+  [RuoloEnum.GESTORE]: { label: "Gestore", color: "hsl(145 60% 45%)", accent: "hsl(145 60% 45%/.15)" },
+  [RuoloEnum.ADMIN]: { label: "Admin", color: "hsl(0 70% 55%)", accent: "hsl(0 70% 55%/.15)" },
+};
 
 export function Sidebar() {
   const pathname = usePathname();
   const { ruolo } = useAuth();
 
-  const items = NAV_ITEMS.filter(
-    (item) => !item.roles || !ruolo || item.roles.includes(ruolo)
-  );
+  const dashboardHref = ruolo ? ROLE_DASHBOARD[ruolo] : "/dashboard";
+  const roleItems = ruolo ? NAV_BY_ROLE[ruolo] : NAV_BY_ROLE[RuoloEnum.UTENTE];
+  const meta = ruolo ? ROLE_META[ruolo] : ROLE_META[RuoloEnum.UTENTE];
+
+  const allItems: NavItem[] = [
+    { href: dashboardHref, label: "Dashboard", icon: "⊞" },
+    ...roleItems,
+    ...NAV_COMMON,
+  ];
+
+  const isActive = (href: string) =>
+    pathname === href || (href !== dashboardHref && href !== "/" && pathname.startsWith(href));
 
   return (
     <aside
@@ -39,17 +91,23 @@ export function Sidebar() {
     >
       {/* Logo */}
       <Link
-        href="/dashboard"
-        className="flex items-center gap-2 px-3 py-2 mb-6"
-        style={{ textDecoration: "none" }}
+        href={dashboardHref}
+        className="flex flex-col items-center px-3 py-2 mb-8"
+        style={{
+          textDecoration: "none",
+          gap: "0.6rem",
+        }}
       >
-        <span style={{
-          width: 36, height: 36,
-          borderRadius: "10px",
-          background: "linear-gradient(135deg, hsl(var(--tf-primary)), hsl(var(--tf-accent)))",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          fontSize: "1.1rem", flexShrink: 0,
-        }}>🏃</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/images/auth/trackfit_icon_crop.png"
+          alt="TrackFit logo"
+          style={{
+            width: 48,
+            height: 48,
+            objectFit: "contain",
+          }}
+        />
         <span style={{
           fontWeight: 800, fontSize: "1.2rem", letterSpacing: "-0.03em",
           background: "linear-gradient(135deg, hsl(var(--tf-primary)) 30%, hsl(var(--tf-accent)))",
@@ -57,13 +115,33 @@ export function Sidebar() {
         }}>TrackFit</span>
       </Link>
 
+      {/* Role badge */}
+      {ruolo && (
+        <div style={{
+          margin: "0 0.25rem 1.5rem",
+          padding: "0.5rem 0.875rem",
+          borderRadius: "var(--tf-radius-sm)",
+          background: meta.accent,
+          border: `1px solid ${meta.color}33`,
+          display: "flex", alignItems: "center", gap: "0.5rem",
+        }}>
+          <span style={{
+            width: 8, height: 8, borderRadius: "50%",
+            background: meta.color, flexShrink: 0,
+          }} />
+          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: meta.color, letterSpacing: "0.04em" }}>
+            {meta.label}
+          </span>
+        </div>
+      )}
+
       {/* Nav Items */}
       <nav style={{ display: "flex", flexDirection: "column", gap: "0.25rem", flex: 1 }}>
-        {items.map(({ href, label, icon }) => {
-          const active = pathname === href || (href !== "/dashboard" && pathname.startsWith(href));
+        {allItems.map(({ href, label, icon }) => {
+          const active = isActive(href);
           return (
             <Link
-              key={href}
+              key={`${href}-${label}`}
               href={href}
               style={{
                 display: "flex", alignItems: "center", gap: "0.75rem",

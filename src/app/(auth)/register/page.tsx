@@ -14,7 +14,10 @@ const RUOLI = [
 
 export default function RegisterPage() {
     const router = useRouter();
-    const [form, setForm] = useState({ nome: "", cognome: "", email: "", password: "", ruolo: "UTENTE" });
+    const [form, setForm] = useState({
+        nome: "", cognome: "", email: "", password: "",
+        ruolo: "UTENTE", specializzazione: "",
+    });
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
@@ -24,12 +27,23 @@ export default function RegisterPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
+
+        // Validazione client: specializzazione obbligatoria per COACH
+        if (form.ruolo === "COACH" && !form.specializzazione.trim()) {
+            setError("La specializzazione è obbligatoria per il Coach.");
+            return;
+        }
+
         setLoading(true);
         try {
+            const body: Record<string, unknown> = { ...form, consensoTermini: true };
+            // Rimuovi specializzazione se il ruolo non è COACH
+            if (form.ruolo !== "COACH") delete body.specializzazione;
+
             const res = await fetch("/api/auth", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ ...form, consensoTermini: true }),
+                body: JSON.stringify(body),
             });
             const data = await res.json();
             if (!res.ok) { setError(data.error ?? "Errore di registrazione"); setLoading(false); return; }
@@ -74,6 +88,19 @@ export default function RegisterPage() {
                         ))}
                     </select>
                 </div>
+
+                {/* Specializzazione – visibile solo per COACH */}
+                {form.ruolo === "COACH" && (
+                    <Input
+                        id="specializzazione"
+                        label="Specializzazione"
+                        placeholder="es. Atletica, Nuoto, CrossFit..."
+                        icon="🏅"
+                        value={form.specializzazione}
+                        onChange={set("specializzazione")}
+                        required
+                    />
+                )}
 
                 {error && (
                     <p style={{ padding: "0.75rem", borderRadius: "var(--tf-radius-sm)", background: "hsl(var(--tf-danger)/.15)", color: "hsl(var(--tf-danger))", fontSize: "0.8rem" }}>

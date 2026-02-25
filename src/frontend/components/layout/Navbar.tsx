@@ -4,10 +4,20 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@frontend/contexts/AuthContext";
 import { NotificationBell } from "./NotificationBell";
+import { RuoloEnum } from "@backend/domain/model/enums";
+
+const ROLE_DASHBOARD: Record<RuoloEnum, string> = {
+  [RuoloEnum.COACH]: "/coach/dashboard",
+  [RuoloEnum.GESTORE]: "/gym/dashboard",
+  [RuoloEnum.UTENTE]: "/dashboard",
+  [RuoloEnum.ADMIN]: "/dashboard",
+};
 
 export function Navbar() {
   const { user, ruolo, signOut } = useAuth();
   const router = useRouter();
+
+  const dashboardHref = ruolo ? ROLE_DASHBOARD[ruolo] : "/dashboard";
 
   const initials = user
     ? `${user.user_metadata?.nome?.[0] ?? ""}${user.user_metadata?.cognome?.[0] ?? ""}`.toUpperCase()
@@ -34,9 +44,9 @@ export function Navbar() {
         gap: "1rem",
       }}
     >
-      {/* Mobile logo */}
+      {/* Mobile logo – punta alla dashboard del ruolo */}
       <Link
-        href="/dashboard"
+        href={dashboardHref}
         className="md:hidden flex items-center gap-2"
         style={{ textDecoration: "none" }}
       >
@@ -108,6 +118,18 @@ export function Navbar() {
             <p style={{ padding: "0.5rem 0.75rem", fontSize: "0.75rem", color: "hsl(var(--tf-text-muted))" }}>
               {user?.email}
             </p>
+            <Link
+              href={dashboardHref}
+              style={{
+                display: "block", padding: "0.5rem 0.75rem",
+                borderRadius: "var(--tf-radius-sm)",
+                fontSize: "0.875rem",
+                color: "hsl(var(--tf-text))",
+                textDecoration: "none",
+              }}
+            >
+              ⊞ Dashboard
+            </Link>
             <Link
               href="/profile"
               style={{

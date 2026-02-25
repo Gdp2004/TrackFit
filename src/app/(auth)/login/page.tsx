@@ -6,6 +6,15 @@ import { useRouter } from "next/navigation";
 import { supabaseBrowser } from "@frontend/lib/supabase-browser";
 import { Input } from "@frontend/components/ui/Input";
 import { Button } from "@frontend/components/ui/Button";
+import { RuoloEnum } from "@backend/domain/model/enums";
+
+/** Mappa ruolo → dashboard di destinazione */
+const ROLE_DASHBOARD: Record<string, string> = {
+    [RuoloEnum.COACH]: "/coach/dashboard",
+    [RuoloEnum.GESTORE]: "/gym/dashboard",
+    [RuoloEnum.UTENTE]: "/dashboard",
+    [RuoloEnum.ADMIN]: "/dashboard",
+};
 
 export default function LoginPage() {
     const router = useRouter();
@@ -18,10 +27,14 @@ export default function LoginPage() {
         e.preventDefault();
         setError(null);
         setLoading(true);
-        const { error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabaseBrowser.auth.signInWithPassword({ email, password });
         setLoading(false);
         if (error) { setError(error.message); return; }
-        router.push("/dashboard");
+
+        // Redirect basato sul ruolo dell'utente
+        const ruolo = data.user?.user_metadata?.ruolo as string | undefined;
+        const destination = ruolo ? (ROLE_DASHBOARD[ruolo] ?? "/dashboard") : "/dashboard";
+        router.push(destination);
     };
 
     return (

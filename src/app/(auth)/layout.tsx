@@ -1,70 +1,75 @@
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
     return (
         <div style={{ minHeight: "100dvh", display: "flex", background: "hsl(var(--tf-bg))" }}>
-            {/* Left panel – branding */}
+
+            {/* Left panel – solo sfondo + scritta TrackFit */}
             <div
                 className="hidden md:flex"
                 style={{
                     width: "45%",
                     flexDirection: "column",
                     alignItems: "center",
-                    justifyContent: "center",
-                    padding: "3rem",
-                    background: "linear-gradient(160deg, hsl(20 50% 10%) 0%, hsl(var(--tf-bg)) 50%, hsl(25 30% 8%) 100%)",
+                    justifyContent: "flex-start",
+                    paddingTop: "3.5rem",
+                    padding: "3.5rem 3rem 3rem",
                     position: "relative",
                     overflow: "hidden",
                 }}
             >
-                {/* decorative circles */}
+                {/* Background image */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                    src="/images/auth/Login-backgorund.jpg"
+                    alt=""
+                    aria-hidden="true"
+                    style={{
+                        position: "absolute", inset: 0,
+                        width: "100%", height: "100%",
+                        objectFit: "cover",
+                        opacity: 0.55,
+                    }}
+                />
+                {/* Dark overlay */}
                 <div style={{
-                    position: "absolute", top: "-80px", right: "-80px",
-                    width: 300, height: 300, borderRadius: "50%",
-                    background: "hsl(var(--tf-primary)/.15)",
-                }} />
-                <div style={{
-                    position: "absolute", bottom: "-60px", left: "-60px",
-                    width: 220, height: 220, borderRadius: "50%",
-                    background: "hsl(var(--tf-accent)/.12)",
+                    position: "absolute", inset: 0,
+                    background: "linear-gradient(160deg, hsl(20 50% 10%/.85) 0%, hsl(var(--tf-bg)/.5) 50%, hsl(25 30% 8%/.9) 100%)",
                 }} />
 
-                <div style={{ textAlign: "center", zIndex: 1 }}>
-                    <div style={{
-                        width: 72, height: 72,
-                        borderRadius: "20px",
-                        background: "linear-gradient(135deg, hsl(var(--tf-primary)), hsl(var(--tf-accent)))",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "2rem", margin: "0 auto 1.5rem",
-                        boxShadow: "0 16px 40px hsl(var(--tf-primary)/.4)",
-                    }}>🏃</div>
-
-                    <h1 style={{
-                        fontSize: "2.5rem", fontWeight: 900, letterSpacing: "-0.04em",
-                        background: "linear-gradient(135deg, #fff 30%, hsl(var(--tf-accent)))",
-                        WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
-                        marginBottom: "1rem",
-                    }}>
-                        TrackFit
-                    </h1>
-                    <p style={{ color: "rgba(255,255,255,.7)", fontSize: "1rem", lineHeight: 1.6, maxWidth: 280 }}>
-                        Il tuo compagno digitale per monitorare ogni allenamento e raggiungere i tuoi obiettivi.
-                    </p>
-                    <div style={{ display: "flex", gap: "1.5rem", justifyContent: "center", marginTop: "2.5rem" }}>
-                        {[["🏃", "Allenamenti"], ["🎯", "Coach"], ["📊", "Report"]].map(([icon, label]) => (
-                            <div key={label} style={{ textAlign: "center", color: "rgba(255,255,255,.8)" }}>
-                                <div style={{ fontSize: "1.5rem", marginBottom: "0.25rem" }}>{icon}</div>
-                                <div style={{ fontSize: "0.75rem", fontWeight: 600 }}>{label}</div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
+                {/* Solo scritta TrackFit – in alto al centro */}
+                <h1 style={{
+                    position: "relative", zIndex: 1,
+                    fontSize: "3.5rem", fontWeight: 900, letterSpacing: "-0.05em",
+                    background: "linear-gradient(135deg, #fff 30%, hsl(var(--tf-accent)))",
+                    WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent",
+                    margin: 0,
+                    textAlign: "center",
+                }}>
+                    TrackFit
+                </h1>
             </div>
 
-            {/* Right panel – form */}
+            {/* Right panel – form con icona sopra */}
             <div style={{
                 flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
                 padding: "2rem",
             }}>
                 <div style={{ width: "100%", maxWidth: "420px" }} className="animate-fadeIn">
+
+                    {/* Icona TrackFit sopra il form */}
+                    <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src="/images/auth/trackfit_icon_crop.png"
+                            alt="TrackFit logo"
+                            style={{
+                                width: 110,
+                                height: 110,
+                                objectFit: "contain",
+                                display: "inline-block",
+                            }}
+                        />
+                    </div>
+
                     {children}
                 </div>
             </div>

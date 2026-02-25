@@ -19,8 +19,10 @@ import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 const ROUTE_ROLES: Record<string, string[]> = {
     "/api/gyms/corsi/prenotazioni": ["UTENTE", "GESTORE", "ADMIN"],
     "/api/gyms/corsi": ["GESTORE", "ADMIN"],
+    "/api/gyms/me": ["GESTORE", "ADMIN"],
     "/api/gyms": ["ADMIN"],
     "/api/coaches/prenotazioni": ["UTENTE", "COACH", "ADMIN"],
+    "/api/coaches/me": ["COACH", "ADMIN"],
     "/api/coaches": ["UTENTE", "COACH", "ADMIN"],
     "/api/reports": ["COACH", "GESTORE", "ADMIN"],
     "/api/subscriptions": ["UTENTE", "GESTORE", "ADMIN"],
