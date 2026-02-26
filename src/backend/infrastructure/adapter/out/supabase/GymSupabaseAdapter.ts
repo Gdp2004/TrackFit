@@ -4,7 +4,7 @@
 // ============================================================
 
 import { GymRepositoryPort } from "@/backend/domain/port/out/GymRepositoryPort";
-import { Struttura, Corso, Prenotazione, ListaAttesa } from "@/backend/domain/model/types";
+import { Struttura, Corso, Prenotazione, ListaAttesa, TipoAbbonamento, GestoreStats } from "@/backend/domain/model/types";
 import { createSupabaseServerClient } from "@/backend/infrastructure/config/supabase";
 
 export class GymSupabaseAdapter implements GymRepositoryPort {
@@ -19,6 +19,28 @@ export class GymSupabaseAdapter implements GymRepositoryPort {
         const supabase = createSupabaseServerClient();
         const { data, error } = await supabase.from("strutture").select("*").eq("id", id).single();
         return error ? null : data as Struttura;
+    }
+
+    async findStrutturaByGestoreId(gestoreid: string): Promise<Struttura | null> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.from("strutture").select("*").eq("gestoreid", gestoreid).single();
+        return error ? null : data as Struttura;
+    }
+
+    async updateStruttura(id: string, updateData: Partial<Struttura>): Promise<Struttura> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.from("strutture").update(updateData).eq("id", id).select().single();
+        if (error) throw new Error(error.message);
+        return data as Struttura;
+    }
+
+    async getStats(strutturaid: string): Promise<GestoreStats> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.rpc("get_gestore_stats", { p_struttura_id: strutturaid });
+        if (error || !data) {
+            return { abbonamenti_attivi: 0, corsi_settimana: 0, accessi_oggi: 0, incasso_mese: 0 };
+        }
+        return data as GestoreStats;
     }
 
     async existsStrutturaByPivaOrCun(piva: string, cun: string): Promise<boolean> {
@@ -137,6 +159,13 @@ export class GymSupabaseAdapter implements GymRepositoryPort {
         await supabase.from("corsi").delete().eq("id", corsoid);
     }
 
+    async updateCorso(corsoid: string, updateData: Partial<Corso>): Promise<Corso> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.from("corsi").update(updateData).eq("id", corsoid).select().single();
+        if (error) throw new Error(error.message);
+        return data as Corso;
+    }
+
     // FR26: ID utenti con prenotazione confermata sul corso
     async findUserIdsByCorsoId(corsoid: string): Promise<string[]> {
         const supabase = createSupabaseServerClient();
@@ -158,5 +187,25 @@ export class GymSupabaseAdapter implements GymRepositoryPort {
             .eq("corsoid", corsoid);
         if (error) return [];
         return (data ?? []).map((r: { userid: string }) => r.userid);
+    }
+
+    // FR7: Tipi abbonamento
+    async saveTipoAbbonamento(tipo: Partial<TipoAbbonamento>): Promise<TipoAbbonamento> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.from("tipi_abbonamento").insert(tipo).select().single();
+        if (error) throw new Error(error.message);
+        return data as TipoAbbonamento;
+    }
+
+    async findTipiAbbonamentoByStrutturaId(strutturaid: string): Promise<TipoAbbonamento[]> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.from("tipi_abbonamento").select("*").eq("strutturaid", strutturaid).order("prezzo", { ascending: true });
+        if (error) return [];
+        return (data ?? []) as TipoAbbonamento[];
+    }
+
+    async deleteTipoAbbonamento(id: string): Promise<void> {
+        const supabase = createSupabaseServerClient();
+        await supabase.from("tipi_abbonamento").delete().eq("id", id);
     }
 }

@@ -14,4 +14,7 @@ export interface UserManagementPort {
     eliminaUtente(userid: string): Promise<void>;
     associaCoach(userid: string, coachid: string): Promise<void>;
     aggiornaParametriFisici(userid: string, peso: number, altezza: number): Promise<User>;
+    // ─── Admin ────────────────────────────────────────────────────────────────
+    getListaUtenti(ruolo?: RuoloEnum): Promise<User[]>;  // FR15
+    cambiaRuolo(userid: string, ruolo: RuoloEnum): Promise<User>; // Admin: cambio ruolo
 }

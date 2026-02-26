@@ -7,10 +7,11 @@
 
 import { GymManagementPort } from "@/backend/domain/port/in/GymManagementPort";
 import { GymRepositoryPort } from "@/backend/domain/port/out/GymRepositoryPort";
+import { CoachRepositoryPort } from "@/backend/domain/port/out/CoachRepositoryPort";
 import { SubscriptionRepositoryPort } from "@/backend/domain/port/out/SubscriptionRepositoryPort";
 import { NotificationServicePort } from "@/backend/domain/port/out/NotificationServicePort";
 import { AuditLogRepositoryPort } from "@/backend/domain/port/out/AuditLogRepositoryPort";
-import { Struttura, Corso, Prenotazione } from "@/backend/domain/model/types";
+import { Struttura, Corso, Prenotazione, Coach, TipoAbbonamento, GestoreStats } from "@/backend/domain/model/types";
 import { StatoAbbonamentoEnum, StatoPrenotazioneEnum, RuoloEnum } from "@/backend/domain/model/enums";
 import { createSupabaseServerClient } from "@/backend/infrastructure/config/supabase";
 
@@ -38,7 +39,8 @@ export class CreateGymManagerService implements GymManagementPort {
     private readonly gymRepo: GymRepositoryPort,
     private readonly subRepo: SubscriptionRepositoryPort,
     private readonly notificationService: NotificationServicePort,
-    private readonly auditRepo: AuditLogRepositoryPort
+    private readonly auditRepo: AuditLogRepositoryPort,
+    private readonly coachRepo?: CoachRepositoryPort
   ) { }
 
   // ─── FR5: Crea struttura (R8 unicità, R9 anti-duplicato fuzzy) ───────────
@@ -250,5 +252,39 @@ export class CreateGymManagerService implements GymManagementPort {
 
   async getCorsiStruttura(strutturaid: string): Promise<Corso[]> {
     return this.gymRepo.findCorsiByStrutturaId(strutturaid);
+  }
+
+  async aggiornaCorso(corsoid: string, data: Partial<Corso>): Promise<Corso> {
+    return this.gymRepo.updateCorso(corsoid, data);
+  }
+
+  // ─── Gestore dashboard ──────────────────────────────────────────────────────
+  async getStrutturaGestore(gestoreid: string): Promise<Struttura | null> {
+    return this.gymRepo.findStrutturaByGestoreId(gestoreid);
+  }
+
+  async aggiornaStruttura(strutturaid: string, data: Partial<Struttura>): Promise<Struttura> {
+    return this.gymRepo.updateStruttura(strutturaid, data);
+  }
+
+  async getGestoreStats(strutturaid: string): Promise<GestoreStats> {
+    return this.gymRepo.getStats(strutturaid);
+  }
+
+  async getCoachesStruttura(strutturaid: string): Promise<Coach[]> {
+    if (this.coachRepo) return this.coachRepo.findByStrutturaId(strutturaid);
+    return [];
+  }
+
+  async creaTipoAbbonamento(tipo: Omit<TipoAbbonamento, "id" | "createdat">): Promise<TipoAbbonamento> {
+    return this.gymRepo.saveTipoAbbonamento(tipo);
+  }
+
+  async getTipiAbbonamento(strutturaid: string): Promise<TipoAbbonamento[]> {
+    return this.gymRepo.findTipiAbbonamentoByStrutturaId(strutturaid);
+  }
+
+  async eliminaTipoAbbonamento(id: string): Promise<void> {
+    return this.gymRepo.deleteTipoAbbonamento(id);
   }
 }

@@ -11,7 +11,7 @@ import { NotificationServicePort } from "@/backend/domain/port/out/NotificationS
 import { AuditLogRepositoryPort } from "@/backend/domain/port/out/AuditLogRepositoryPort";
 import { PaymentGatewayPort } from "@/backend/domain/port/out/PaymentGatewayPort";
 import { PaymentRepositoryPort } from "@/backend/domain/port/out/PaymentRepositoryPort";
-import { Prenotazione, User } from "@/backend/domain/model/types";
+import { Prenotazione, User, Coach, CoachStats } from "@/backend/domain/model/types";
 import { StatoPagamentoEnum, StatoPrenotazioneEnum } from "@/backend/domain/model/enums";
 
 export class CreateCoachManagerService implements CoachManagementPort {
@@ -167,5 +167,26 @@ export class CreateCoachManagerService implements CoachManagementPort {
   // ─── FR13: Roster atleti del coach ───────────────────────────────────────────
   async getRosterAtleti(coachid: string): Promise<User[]> {
     return this.userRepo.findByCoachId(coachid);
+  }
+
+  // ─── Coach profilo ───────────────────────────────────────────────────────────
+  async getProfiloCoach(userid: string): Promise<Coach | null> {
+    return this.coachRepo.findByUserId(userid);
+  }
+
+  async aggiornaProfiloCoach(coachid: string, data: Partial<Coach>): Promise<Coach> {
+    return this.coachRepo.update(coachid, data);
+  }
+
+  async getCoachStats(coachid: string): Promise<CoachStats> {
+    return this.coachRepo.getStats(coachid);
+  }
+
+  async getPrenotazioniCoach(coachid: string): Promise<Prenotazione[]> {
+    return this.coachRepo.findPrenotazioniByCoachId(coachid);
+  }
+
+  async getCoachesByStruttura(strutturaid: string): Promise<Coach[]> {
+    return this.coachRepo.findByStrutturaId(strutturaid);
   }
 }

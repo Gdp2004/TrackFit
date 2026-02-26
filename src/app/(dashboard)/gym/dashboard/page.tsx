@@ -1,156 +1,202 @@
 // ============================================================
-// Dashboard Gestore Palestra – /gym/dashboard
-// Visibile solo agli utenti con ruolo GESTORE
+// /gym/dashboard – Dashboard principale Gestore Palestra
+// Dati reali: statistiche dal DB tramite RPC e API
 // ============================================================
 "use client";
 
+import { useEffect, useState } from "react";
 import { useRoleRedirect } from "@frontend/hooks/useRoleRedirect";
 import { RuoloEnum } from "@backend/domain/model/enums";
+import type { GestoreStats, Struttura } from "@backend/domain/model/types";
+import Link from "next/link";
 
-const STAT_CARDS = [
-    { icon: "💳", label: "Abbonamenti Attivi", value: "—", color: "hsl(var(--tf-primary))" },
-    { icon: "🏃", label: "Accessi Oggi", value: "—", color: "hsl(var(--tf-accent))" },
-    { icon: "📆", label: "Corsi Settimana", value: "—", color: "hsl(200 80% 60%)" },
-    { icon: "💰", label: "Incasso Mese", value: "—", color: "hsl(145 60% 50%)" },
-];
+function StatCard({ label, value, icon, color, suffix, prefix }: {
+    label: string;
+    value: string | number;
+    icon: string;
+    color: string;
+    suffix?: string;
+    prefix?: string;
+}) {
+    return (
+        <div style={{
+            padding: "1.5rem",
+            borderRadius: "var(--tf-radius)",
+            background: "hsl(var(--tf-surface))",
+            border: "1px solid hsl(var(--tf-border))",
+            position: "relative", overflow: "hidden",
+        }}>
+            <div style={{
+                position: "absolute", top: 0, right: 0, width: 80, height: 80,
+                borderRadius: "0 0 0 80px",
+                background: `${color}18`,
+                display: "flex", alignItems: "flex-start", justifyContent: "flex-end",
+                padding: "0.75rem",
+            }}>
+                <span style={{ fontSize: "1.4rem" }}>{icon}</span>
+            </div>
+            <p style={{ fontSize: "0.78rem", fontWeight: 600, color: "hsl(var(--tf-text-muted))", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "0.5rem" }}>
+                {label}
+            </p>
+            <p style={{ fontSize: "2rem", fontWeight: 900, color, lineHeight: 1 }}>
+                {prefix}{value}{suffix && <span style={{ fontSize: "1rem", marginLeft: "0.2rem" }}>{suffix}</span>}
+            </p>
+        </div>
+    );
+}
 
 const QUICK_LINKS = [
-    { icon: "🏋️", label: "Gestisci Struttura", href: "/gyms/struttura", desc: "Modifica dati e orari palestra" },
-    { icon: "💳", label: "Abbonamenti", href: "/subscription", desc: "Gestisci piani e iscritti" },
-    { icon: "🎟️", label: "Coupon Promo", href: "/gyms/coupon", desc: "Crea codici sconto" },
-    { icon: "📈", label: "Report Palestra", href: "/reports", desc: "Analisi presenze e incassi" },
+    { href: "/gyms/struttura", icon: "🏋️", label: "Dati Struttura", desc: "Info e contatti palestra" },
+    { href: "/gyms/coaches", icon: "💪", label: "Coach", desc: "Gestisci i trainer" },
+    { href: "/gyms/corsi", icon: "📆", label: "Corsi", desc: "Programma e gestisci" },
+    { href: "/gyms/abbonamenti", icon: "💳", label: "Abbonamenti", desc: "Piani e prezzi" },
+    { href: "/gyms/coupon", icon: "🎟️", label: "Coupon", desc: "Promozioni attive" },
 ];
 
-export default function GymDashboardPage() {
-    const { user, ruolo, loading } = useRoleRedirect(RuoloEnum.GESTORE);
+export default function GymDashboard() {
+    const { user, loading } = useRoleRedirect(RuoloEnum.GESTORE);
+    const [struttura, setStruttura] = useState<Struttura | null>(null);
+    const [stats, setStats] = useState<GestoreStats | null>(null);
+    const [loadingStats, setLoadingStats] = useState(true);
 
-    if (loading || !user) {
-        return (
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "60vh" }}>
-                <div style={{ textAlign: "center", color: "hsl(var(--tf-text-muted))" }}>
-                    <div style={{ fontSize: "2rem", marginBottom: "1rem" }}>⏳</div>
-                    <p>Caricamento...</p>
-                </div>
-            </div>
-        );
-    }
+    useEffect(() => {
+        if (!user) return;
+        const fetchData = async () => {
+            try {
+                const res = await fetch("/api/gyms/me");
+                if (res.ok) {
+                    const data = await res.json();
+                    setStruttura(data.struttura ?? null);
+                    setStats(data.stats ?? null);
+                }
+            } finally {
+                setLoadingStats(false);
+            }
+        };
+        fetchData();
+    }, [user]);
 
-    const nome = user.user_metadata?.nome as string | undefined;
+    if (loading) return null;
+
+    const displayName = user?.user_metadata?.nome ?? user?.email?.split("@")[0] ?? "Gestore";
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
-            {/* Header */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.75rem" }}>
+            {/* Hero Header */}
             <div style={{
-                padding: "2rem",
+                padding: "1.75rem 2rem",
                 borderRadius: "var(--tf-radius)",
-                background: "linear-gradient(135deg, hsl(145 60% 40%/.15), hsl(var(--tf-primary)/.08))",
-                border: "1px solid hsl(145 60% 40%/.25)",
-                position: "relative",
-                overflow: "hidden",
-                minHeight: 120,
+                background: "linear-gradient(135deg, hsl(220 80% 45%), hsl(var(--tf-primary)))",
+                color: "#fff",
+                position: "relative", overflow: "hidden",
             }}>
-                {/* Hero image */}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                    src="/images/gym/dashboard-hero.png"
-                    alt=""
-                    aria-hidden="true"
-                    style={{
-                        position: "absolute", inset: 0,
-                        width: "100%", height: "100%",
-                        objectFit: "cover", objectPosition: "center",
-                        opacity: 0.18, borderRadius: "var(--tf-radius)",
-                    }}
-                />
-
-                <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                    <div style={{
-                        width: 56, height: 56, borderRadius: "14px",
-                        background: "linear-gradient(135deg, hsl(145 60% 45%), hsl(var(--tf-primary)))",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: "1.5rem", flexShrink: 0,
-                    }}>🏋️</div>
-                    <div>
-                        <h1 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "0.25rem" }}>
-                            Ciao, {nome ?? "Gestore"} 👋
-                        </h1>
-                        <p style={{ color: "hsl(var(--tf-text-muted))", fontSize: "0.875rem" }}>
-                            Pannello Gestore Palestra · {ruolo}
+                <div style={{ position: "absolute", top: -30, right: -30, width: 150, height: 150, borderRadius: "50%", background: "rgba(255,255,255,0.06)" }} />
+                <div style={{ position: "absolute", bottom: -20, right: 60, width: 80, height: 80, borderRadius: "50%", background: "rgba(255,255,255,0.04)" }} />
+                <h1 style={{ fontSize: "1.6rem", fontWeight: 900, marginBottom: "0.25rem" }}>
+                    🏋️ Ciao, {displayName}!
+                </h1>
+                {struttura ? (
+                    <>
+                        <p style={{ opacity: 0.9, fontWeight: 700, fontSize: "1rem" }}>{struttura.denominazione}</p>
+                        <p style={{ opacity: 0.7, fontSize: "0.85rem", marginTop: "0.2rem" }}>
+                            📍 {struttura.indirizzo}
                         </p>
-                    </div>
-                </div>
+                        <div style={{ marginTop: "0.75rem" }}>
+                            <span style={{
+                                padding: "0.25rem 0.75rem", borderRadius: "999px",
+                                background: struttura.stato === "Attiva" ? "rgba(0,255,100,0.2)" : "rgba(255,0,0,0.2)",
+                                fontSize: "0.75rem", fontWeight: 700,
+                                border: `1px solid ${struttura.stato === "Attiva" ? "rgba(0,255,100,0.4)" : "rgba(255,0,0,0.4)"}`,
+                            }}>
+                                {struttura.stato === "Attiva" ? "✓ Attiva" : "⏸ Sospesa"}
+                            </span>
+                        </div>
+                    </>
+                ) : (
+                    <p style={{ opacity: 0.7, fontSize: "0.85rem", marginTop: "0.25rem" }}>
+                        Dashboard Gestore Palestra · TrackFit
+                    </p>
+                )}
             </div>
 
             {/* Stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: "1rem" }}>
-                {STAT_CARDS.map(({ icon, label, value, color }) => (
-                    <div key={label} style={{
-                        padding: "1.5rem",
-                        borderRadius: "var(--tf-radius)",
-                        background: "hsl(var(--tf-surface))",
-                        border: "1px solid hsl(var(--tf-border))",
-                        display: "flex", flexDirection: "column", gap: "0.5rem",
-                    }}>
-                        <div style={{ fontSize: "1.5rem" }}>{icon}</div>
-                        <div style={{ fontSize: "1.75rem", fontWeight: 800, color }}>{value}</div>
-                        <div style={{ fontSize: "0.8rem", color: "hsl(var(--tf-text-muted))", fontWeight: 500 }}>{label}</div>
+            <div>
+                <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "hsl(var(--tf-text-muted))", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.75rem" }}>
+                    STATISTICHE OGGI
+                </h2>
+                {loadingStats ? (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
+                        {[1, 2, 3, 4].map(i => (
+                            <div key={i} style={{ height: 110, borderRadius: "var(--tf-radius)", background: "hsl(var(--tf-surface))", border: "1px solid hsl(var(--tf-border))", opacity: 0.5 }} />
+                        ))}
                     </div>
-                ))}
+                ) : !struttura ? (
+                    <div style={{ padding: "1.5rem", borderRadius: "var(--tf-radius)", border: "2px dashed hsl(var(--tf-border))", textAlign: "center", color: "hsl(var(--tf-text-muted))" }}>
+                        <p>Nessuna struttura associata al tuo account.</p>
+                        <p style={{ fontSize: "0.8rem", marginTop: "0.25rem" }}>Contatta un amministratore per configurare la tua palestra.</p>
+                    </div>
+                ) : (
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "1rem" }}>
+                        <StatCard label="Abbonamenti Attivi" value={stats?.abbonamenti_attivi ?? 0} icon="💳" color="hsl(145 60% 45%)" />
+                        <StatCard label="Corsi Settimana" value={stats?.corsi_settimana ?? 0} icon="📆" color="hsl(var(--tf-primary))" />
+                        <StatCard label="Accessi Oggi" value={stats?.accessi_oggi ?? 0} icon="🚪" color="hsl(200 80% 55%)" />
+                        <StatCard label="Incasso Mese" value={(stats?.incasso_mese ?? 0).toFixed(0)} icon="💶" color="hsl(45 90% 55%)" prefix="€" />
+                    </div>
+                )}
             </div>
 
             {/* Quick Links */}
             <div>
-                <h2 style={{ fontSize: "1.125rem", fontWeight: 700, marginBottom: "1rem" }}>Gestione Palestra</h2>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem" }}>
-                    {QUICK_LINKS.map(({ icon, label, href, desc }) => (
-                        <a key={label} href={href} style={{
+                <h2 style={{ fontSize: "0.85rem", fontWeight: 700, color: "hsl(var(--tf-text-muted))", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: "0.75rem" }}>
+                    GESTIONE PALESTRA
+                </h2>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "1rem" }}>
+                    {QUICK_LINKS.map(link => (
+                        <Link key={link.href} href={link.href} style={{
                             padding: "1.25rem",
-                            borderRadius: "var(--tf-radius-sm)",
+                            borderRadius: "var(--tf-radius)",
                             background: "hsl(var(--tf-surface))",
                             border: "1px solid hsl(var(--tf-border))",
                             textDecoration: "none", color: "inherit",
-                            display: "flex", alignItems: "flex-start", gap: "0.75rem",
+                            display: "flex", gap: "1rem", alignItems: "center",
                             transition: "border-color 0.2s, transform 0.15s",
                         }}
-                            onMouseEnter={(e) => {
-                                (e.currentTarget as HTMLAnchorElement).style.borderColor = "hsl(145 60% 45%/.5)";
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLAnchorElement).style.borderColor = "hsl(var(--tf-primary)/.4)";
                                 (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-2px)";
                             }}
-                            onMouseLeave={(e) => {
+                            onMouseLeave={e => {
                                 (e.currentTarget as HTMLAnchorElement).style.borderColor = "hsl(var(--tf-border))";
                                 (e.currentTarget as HTMLAnchorElement).style.transform = "none";
                             }}
                         >
-                            <span style={{ fontSize: "1.25rem", flexShrink: 0 }}>{icon}</span>
+                            <span style={{ fontSize: "1.75rem" }}>{link.icon}</span>
                             <div>
-                                <div style={{ fontWeight: 700, fontSize: "0.9rem", marginBottom: "0.25rem" }}>{label}</div>
-                                <div style={{ fontSize: "0.75rem", color: "hsl(var(--tf-text-muted))" }}>{desc}</div>
+                                <p style={{ fontWeight: 700, fontSize: "0.9rem" }}>{link.label}</p>
+                                <p style={{ fontSize: "0.75rem", color: "hsl(var(--tf-text-muted))" }}>{link.desc}</p>
                             </div>
-                        </a>
+                        </Link>
                     ))}
                 </div>
             </div>
 
-            {/* Alert struttura non configurata */}
-            <div style={{
-                padding: "1.25rem",
-                borderRadius: "var(--tf-radius-sm)",
-                background: "hsl(45 90% 55%/.1)",
-                border: "1px solid hsl(45 90% 55%/.3)",
-                display: "flex", alignItems: "center", gap: "0.75rem",
-                fontSize: "0.875rem",
-            }}>
-                <span style={{ fontSize: "1.25rem" }}>⚡</span>
-                <div>
-                    <span style={{ fontWeight: 600, marginRight: "0.5rem" }}>Prima configurazione:</span>
-                    <span style={{ color: "hsl(var(--tf-text-muted))" }}>
-                        Configura i dati della tua struttura per abilitare la gestione degli abbonamenti.
-                    </span>
-                    <a href="/gyms/struttura" style={{ marginLeft: "0.5rem", color: "hsl(var(--tf-primary))", fontWeight: 600 }}>
-                        Configura ora →
-                    </a>
+            {/* Struttura detail */}
+            {struttura && (
+                <div style={{ padding: "1.25rem", borderRadius: "var(--tf-radius)", background: "hsl(var(--tf-surface))", border: "1px solid hsl(var(--tf-border))" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+                        <h2 style={{ fontSize: "0.95rem", fontWeight: 700 }}>Dettagli struttura</h2>
+                        <Link href="/gyms/struttura" style={{ fontSize: "0.78rem", color: "hsl(var(--tf-primary))", textDecoration: "none" }}>
+                            ✏️ Modifica →
+                        </Link>
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "0.5rem" }}>
+                        <div><p style={{ fontSize: "0.7rem", color: "hsl(var(--tf-text-muted))", fontWeight: 600 }}>P.IVA</p><p style={{ fontSize: "0.85rem", fontFamily: "monospace" }}>{struttura.piva}</p></div>
+                        <div><p style={{ fontSize: "0.7rem", color: "hsl(var(--tf-text-muted))", fontWeight: 600 }}>CUN</p><p style={{ fontSize: "0.85rem", fontFamily: "monospace" }}>{struttura.cun}</p></div>
+                        {struttura.telefono && <div><p style={{ fontSize: "0.7rem", color: "hsl(var(--tf-text-muted))", fontWeight: 600 }}>Telefono</p><p style={{ fontSize: "0.85rem" }}>{struttura.telefono}</p></div>}
+                        {struttura.email && <div><p style={{ fontSize: "0.7rem", color: "hsl(var(--tf-text-muted))", fontWeight: 600 }}>Email</p><p style={{ fontSize: "0.85rem" }}>{struttura.email}</p></div>}
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 }

@@ -17,15 +17,29 @@ import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 
 // Mappa route → ruoli ammessi. "*" = qualsiasi utente autenticato.
 const ROUTE_ROLES: Record<string, string[]> = {
+    // Admin
+    "/api/admin/users": ["ADMIN"],
+    // User profile (all authenticated roles)
+    "/api/users/me": ["UTENTE", "COACH", "GESTORE", "ADMIN"],
+    // Gyms
     "/api/gyms/corsi/prenotazioni": ["UTENTE", "GESTORE", "ADMIN"],
+    "/api/gyms/tipi-abbonamento": ["GESTORE", "ADMIN"],
+    "/api/gyms/coupon": ["GESTORE", "ADMIN"],
     "/api/gyms/corsi": ["GESTORE", "ADMIN"],
     "/api/gyms/me": ["GESTORE", "ADMIN"],
     "/api/gyms": ["ADMIN"],
+    // Coaches
     "/api/coaches/prenotazioni": ["UTENTE", "COACH", "ADMIN"],
     "/api/coaches/me": ["COACH", "ADMIN"],
     "/api/coaches": ["UTENTE", "COACH", "ADMIN"],
+    // Reports
     "/api/reports": ["COACH", "GESTORE", "ADMIN"],
+    // Subscriptions
+    "/api/subscriptions/validate": ["UTENTE", "GESTORE", "ADMIN"],
+    "/api/subscriptions/cancel": ["UTENTE", "ADMIN"],
+    "/api/subscriptions/payments": ["UTENTE", "GESTORE", "ADMIN"],
     "/api/subscriptions": ["UTENTE", "GESTORE", "ADMIN"],
+    // Workouts
     "/api/workouts": ["UTENTE", "COACH", "ADMIN"],
 };
 

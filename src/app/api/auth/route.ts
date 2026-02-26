@@ -11,13 +11,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/backend/infrastructure/config/supabase";
-import { CreateUserManagerService } from "@/backend/application/service/user/CreateUserManagerService";
-import { UserSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/UserSupabaseAdapter";
+import { getUserService } from "@/backend/infrastructure/config/serviceFactory";
+import { ok, fail } from "@/backend/infrastructure/http/apiResponse";
+import { checkRateLimit } from "@/backend/infrastructure/http/rateLimiter";
+import { RateLimitError, ValidationError, UnauthorizedError } from "@/backend/domain/model/errors/AppError";
 import { RuoloEnum } from "@/backend/domain/model/enums";
 
-function buildUserService() {
-  return new CreateUserManagerService(new UserSupabaseAdapter());
-}
 
 const RegisterSchema = z.object({
   email: z.string().email(),
@@ -41,22 +40,26 @@ const ForgotSchema = z.object({
 // POST /api/auth – Registrazione (FR1) + consenso T&C (NFR-L3)
 export async function POST(req: NextRequest) {
   const path = req.nextUrl.pathname;
+  // Rate limiting anti brute-force per IP
+  const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown";
+  const rl = checkRateLimit(`auth:${ip}`, "auth");
+  if (!rl.allowed) return fail(new RateLimitError());
 
   // POST /api/auth/login – Login (FR1)
   if (path.endsWith("/login")) {
     try {
       const body = await req.json();
       const parsed = LoginSchema.safeParse(body);
-      if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+      if (!parsed.success) return fail(new ValidationError(JSON.stringify(parsed.error.flatten())));
       const supabase = createSupabaseServerClient();
       const { data, error } = await supabase.auth.signInWithPassword({
         email: parsed.data.email,
         password: parsed.data.password,
       });
-      if (error) return NextResponse.json({ error: error.message }, { status: 401 });
-      return NextResponse.json({ user: data.user, session: data.session });
+      if (error) return fail(new UnauthorizedError("Email o password non corretti."));
+      return ok({ user: data.user, session: data.session });
     } catch (err: unknown) {
-      return NextResponse.json({ error: String(err) }, { status: 500 });
+      return fail(err);
     }
   }
 
@@ -100,7 +103,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Il campo specializzazione è obbligatorio per il Coach." }, { status: 400 });
     }
 
-    const service = buildUserService();
+    const service = getUserService();
     const user = await service.registraUtente(
       parsed.data.email,
       parsed.data.password,
@@ -121,11 +124,21 @@ export async function POST(req: NextRequest) {
         console.error("[Auth] Impossibile creare profilo coach:", coachError.message);
       }
     }
+    // ─── Crea profilo Gestore se ruolo = GESTORE ──────────────────────────
+    if (parsed.data.ruolo === RuoloEnum.GESTORE) {
+      const supabase = createSupabaseServerClient();
+      const { error: gestoreError } = await supabase.from("gestori").insert({
+        userid: user.id,
+      });
+      if (gestoreError) {
+        console.error("[Auth] Impossibile creare profilo gestore:", gestoreError.message);
+      }
+    }
     // ─────────────────────────────────────────────────────────────────────
 
-    return NextResponse.json(user, { status: 201 });
+    return ok(user);
   } catch (err: unknown) {
-    return NextResponse.json({ error: String(err) }, { status: 400 });
+    return fail(err);
   }
 }
 
@@ -133,11 +146,10 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   // L'userid viene iniettato dal middleware RBAC dopo verifica JWT
   const userid = req.headers.get("x-user-id");
-  if (!userid) return NextResponse.json({ error: "Non autenticato." }, { status: 401 });
+  if (!userid) return fail(new UnauthorizedError());
   try {
-    const service = buildUserService();
-    await service.eliminaUtente(userid);
-    return NextResponse.json({ message: "Account e dati eliminati definitivamente (GDPR Art. 17)." });
+    await getUserService().eliminaUtente(userid);
+    return ok({ message: "Account e dati eliminati definitivamente (GDPR Art. 17)." });
   } catch (err: unknown) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

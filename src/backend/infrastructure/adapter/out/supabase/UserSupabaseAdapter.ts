@@ -5,7 +5,18 @@
 
 import { UserRepositoryPort } from "@/backend/domain/port/out/UserRepositoryPort";
 import { User } from "@/backend/domain/model/types";
+import { RuoloEnum } from "@/backend/domain/model/enums";
 import { createSupabaseServerClient } from "@/backend/infrastructure/config/supabase";
+import { createClient } from "@supabase/supabase-js";
+
+// Admin client – uses SERVICE_ROLE_KEY per aggiornare auth.users
+function createAdminClient() {
+    return createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+    );
+}
 
 export class UserSupabaseAdapter implements UserRepositoryPort {
     async save(user: Partial<User>): Promise<User> {
@@ -65,5 +76,51 @@ export class UserSupabaseAdapter implements UserRepositoryPort {
             .select("id", { count: "exact", head: true });
         if (error) return 0;
         return count ?? 0;
+    }
+
+    async findAll(): Promise<User[]> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase
+            .from("users")
+            .select("*")
+            .order("createdat", { ascending: false });
+        if (error) return [];
+        return (data ?? []) as User[];
+    }
+
+    async findByRuolo(ruolo: RuoloEnum): Promise<User[]> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase
+            .from("users")
+            .select("*")
+            .eq("ruolo", ruolo)
+            .order("createdat", { ascending: false });
+        if (error) return [];
+        return (data ?? []) as User[];
+    }
+
+    /**
+     * Aggiorna il ruolo sia nella tabella `users` che in `auth.users.user_metadata`.
+     * Il middleware legge il ruolo dal JWT (user_metadata), quindi entrambi vanno aggiornati.
+     */
+    async updateRuolo(userid: string, ruolo: RuoloEnum): Promise<User> {
+        const supabase = createSupabaseServerClient();
+        const admin = createAdminClient();
+
+        // 1. Aggiorna auth.users.user_metadata (fonte del JWT)
+        const { error: authError } = await admin.auth.admin.updateUserById(userid, {
+            user_metadata: { ruolo },
+        });
+        if (authError) throw new Error(`Auth update failed: ${authError.message}`);
+
+        // 2. Sincronizza tabella users
+        const { data, error } = await supabase
+            .from("users")
+            .update({ ruolo })
+            .eq("id", userid)
+            .select()
+            .single();
+        if (error) throw new Error(`DB Error (updateRuolo): ${error.message}`);
+        return data as User;
     }
 }

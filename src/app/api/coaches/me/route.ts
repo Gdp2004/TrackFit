@@ -1,33 +1,66 @@
 // ============================================================
-// GET /api/coaches/me – Profilo Coach autenticato
+// GET  /api/coaches/me – Profilo + Stats del Coach autenticato
+// PUT  /api/coaches/me – Aggiorna specializzazione/bio/telefono
 // Protetto da middleware: solo COACH | ADMIN
-// Header x-user-id iniettato dal middleware RBAC
 // ============================================================
 
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import { CreateCoachManagerService } from "@/backend/application/service/coach/CreateCoachManagerService";
 import { CoachSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/CoachSupabaseAdapter";
 import { UserSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/UserSupabaseAdapter";
+import { SupabaseRealtimeNotificationAdapter } from "@/backend/infrastructure/adapter/out/notification/SupabaseRealtimeNotificationAdapter";
+import { AuditLogSupabaseAdapter } from "@/backend/infrastructure/adapter/out/supabase/AuditLogSupabaseAdapter";
+
+function buildService() {
+    return new CreateCoachManagerService(
+        new CoachSupabaseAdapter(),
+        new UserSupabaseAdapter(),
+        new SupabaseRealtimeNotificationAdapter(),
+        new AuditLogSupabaseAdapter()
+    );
+}
+
+const AggiornaProfiloSchema = z.object({
+    specializzazione: z.string().min(1).optional(),
+    bio: z.string().optional(),
+    telefono: z.string().optional(),
+});
 
 export async function GET(req: NextRequest) {
     const userid = req.headers.get("x-user-id");
-    if (!userid) {
-        return NextResponse.json({ error: "Non autenticato." }, { status: 401 });
-    }
+    if (!userid) return NextResponse.json({ error: "Non autenticato." }, { status: 401 });
 
     try {
-        const coachAdapter = new CoachSupabaseAdapter();
-        const userAdapter = new UserSupabaseAdapter();
-
-        const [coach, user] = await Promise.all([
-            coachAdapter.findByUserId(userid),
-            userAdapter.findById(userid),
+        const service = buildService();
+        const [coach, stats] = await Promise.all([
+            service.getProfiloCoach(userid),
+            service.getProfiloCoach(userid).then(c => c ? service.getCoachStats(c.id) : null),
         ]);
 
-        if (!coach) {
-            return NextResponse.json({ error: "Profilo coach non trovato." }, { status: 404 });
-        }
+        if (!coach) return NextResponse.json({ error: "Profilo coach non trovato." }, { status: 404 });
 
-        return NextResponse.json({ coach, user });
+        return NextResponse.json({ coach, stats });
+    } catch (err: unknown) {
+        return NextResponse.json({ error: String(err) }, { status: 500 });
+    }
+}
+
+export async function PUT(req: NextRequest) {
+    const userid = req.headers.get("x-user-id");
+    if (!userid) return NextResponse.json({ error: "Non autenticato." }, { status: 401 });
+
+    try {
+        const body = await req.json();
+        const parsed = AggiornaProfiloSchema.safeParse(body);
+        if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+
+        const service = buildService();
+        const coach = await service.getProfiloCoach(userid);
+        if (!coach) return NextResponse.json({ error: "Coach non trovato." }, { status: 404 });
+
+        const aggiornato = await service.aggiornaProfiloCoach(coach.id, parsed.data);
+        return NextResponse.json(aggiornato);
     } catch (err: unknown) {
         return NextResponse.json({ error: String(err) }, { status: 500 });
     }

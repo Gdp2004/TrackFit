@@ -28,6 +28,8 @@ export interface Coach {
     strutturaid?: string;       // palestra di riferimento
     specializzazione: string;
     rating?: number;            // 0-5
+    bio?: string;
+    telefono?: string;
     disponibilita?: SlotDisponibilita[];
 }
 
@@ -35,6 +37,31 @@ export interface SlotDisponibilita {
     giornoSettimana: number;    // 0 = domenica
     oraInizio: string;          // "HH:MM"
     oraFine: string;
+}
+
+export interface Gestore {
+    id: string;
+    userid: string;             // FK → users
+    strutturaid?: string;       // palestra gestita
+    telefono?: string;
+    bio?: string;
+    createdat: string;
+}
+
+/** Statistiche real-time Coach (da RPC get_coach_stats) */
+export interface CoachStats {
+    atleti_seguiti: number;
+    sessioni_oggi: number;
+    sessioni_mese: number;
+    rating_medio: number;
+}
+
+/** Statistiche real-time Gestore (da RPC get_gestore_stats) */
+export interface GestoreStats {
+    abbonamenti_attivi: number;
+    corsi_settimana: number;
+    accessi_oggi: number;
+    incasso_mese: number;
 }
 
 // ─── Workouts ────────────────────────────────────────────────
@@ -83,9 +110,11 @@ export interface TipoAbbonamento {
     id: string;
     strutturaid: string;
     nome: string;                   // es. "Mensile", "Annuale"
-    durataMesi: number;
+    duratamesi: number;
     prezzo: number;
     rinnovabile: boolean;
+    descrizione?: string;
+    createdat?: string;
 }
 
 /** R4: Coupon promozionale */
@@ -120,6 +149,10 @@ export interface Struttura {
     cun: string;                // R9: unico (Codice Univoco Nazionale)
     denominazione: string;
     indirizzo: string;
+    telefono?: string;
+    email?: string;
+    sito?: string;
+    descrizione?: string;
     stato: "Attiva" | "Sospesa";
     gestoreid: string;
 }

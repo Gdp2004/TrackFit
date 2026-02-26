@@ -1,10 +1,10 @@
 // ============================================================
-// CoachSupabaseAdapter
+// CoachSupabaseAdapter – aggiornato con metodi estesi
 // Infrastructure layer – implements CoachRepositoryPort
 // ============================================================
 
 import { CoachRepositoryPort } from "@/backend/domain/port/out/CoachRepositoryPort";
-import { Coach, Prenotazione } from "@/backend/domain/model/types";
+import { Coach, Prenotazione, CoachStats } from "@/backend/domain/model/types";
 import { StatoPrenotazioneEnum } from "@/backend/domain/model/enums";
 import { createSupabaseServerClient } from "@/backend/infrastructure/config/supabase";
 
@@ -14,6 +14,13 @@ export class CoachSupabaseAdapter implements CoachRepositoryPort {
         const { data, error } = await supabase.from("coaches").insert(coach).select().single();
         if (error) throw new Error(error.message);
         return data as Coach;
+    }
+
+    async update(id: string, data: Partial<Coach>): Promise<Coach> {
+        const supabase = createSupabaseServerClient();
+        const { data: updated, error } = await supabase.from("coaches").update(data).eq("id", id).select().single();
+        if (error) throw new Error(error.message);
+        return updated as Coach;
     }
 
     async findById(id: string): Promise<Coach | null> {
@@ -28,6 +35,29 @@ export class CoachSupabaseAdapter implements CoachRepositoryPort {
         const { data, error } = await supabase.from("coaches").select("*").eq("userid", userid).single();
         if (error) return null;
         return data as Coach;
+    }
+
+    async findAll(): Promise<Coach[]> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.from("coaches").select("*").order("rating", { ascending: false });
+        if (error) return [];
+        return (data ?? []) as Coach[];
+    }
+
+    async findByStrutturaId(strutturaid: string): Promise<Coach[]> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.from("coaches").select("*").eq("strutturaid", strutturaid);
+        if (error) return [];
+        return (data ?? []) as Coach[];
+    }
+
+    async getStats(coachid: string): Promise<CoachStats> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.rpc("get_coach_stats", { p_coach_id: coachid });
+        if (error || !data) {
+            return { atleti_seguiti: 0, sessioni_oggi: 0, sessioni_mese: 0, rating_medio: 0 };
+        }
+        return data as CoachStats;
     }
 
     async savePrenotazione(p: Partial<Prenotazione>): Promise<Prenotazione> {
@@ -55,6 +85,16 @@ export class CoachSupabaseAdapter implements CoachRepositoryPort {
         return data as Prenotazione;
     }
 
+    async findPrenotazioniByCoachId(coachid: string): Promise<Prenotazione[]> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.from("prenotazioni")
+            .select("*")
+            .eq("coachid", coachid)
+            .order("dataora", { ascending: true });
+        if (error) return [];
+        return (data ?? []) as Prenotazione[];
+    }
+
     async updatePrenotazione(id: string, p: Partial<Prenotazione>): Promise<Prenotazione> {
         const supabase = createSupabaseServerClient();
         const { data, error } = await supabase.from("prenotazioni").update(p).eq("id", id).select().single();
@@ -65,11 +105,16 @@ export class CoachSupabaseAdapter implements CoachRepositoryPort {
     async saveAuditLog(coachid: string, sessioneid: string, vecchiadataora: Date, nuovadataora: Date, motivazione: string): Promise<void> {
         const supabase = createSupabaseServerClient();
         await supabase.from("audit_log").insert({
-            coachid,
-            sessioneid,
-            vecchiadataora: vecchiadataora.toISOString(),
-            nuovadataora: nuovadataora.toISOString(),
-            motivazione,
+            operazione: "MODIFICA_PIANO",
+            risorsaid: sessioneid,
+            attoreid: coachid,
+            dettagli: {
+                coachid,
+                sessioneid,
+                vecchiadataora: vecchiadataora.toISOString(),
+                nuovadataora: nuovadataora.toISOString(),
+                motivazione,
+            },
         });
     }
 }

@@ -57,4 +57,31 @@ export class CreateUserManagerService implements UserManagementPort {
   async aggiornaParametriFisici(userid: string, peso: number, altezza: number): Promise<User> {
     return this.userRepo.update(userid, { peso, altezza });
   }
+
+  // ─── Admin ──────────────────────────────────────────────────────────────────
+  async getListaUtenti(ruolo?: RuoloEnum): Promise<User[]> {
+    if (ruolo) return this.userRepo.findByRuolo(ruolo);
+    return this.userRepo.findAll();
+  }
+
+  async cambiaRuolo(userid: string, ruolo: RuoloEnum): Promise<User> {
+    const supabase = createSupabaseServerClient();
+
+    const aggiornato = await this.userRepo.updateRuolo(userid, ruolo);
+
+    // Auto-crea profilo nella tabella corretta se si assegna un ruolo speciale
+    if (ruolo === RuoloEnum.COACH) {
+      const { data: existing } = await supabase.from("coaches").select("id").eq("userid", userid).single();
+      if (!existing) {
+        await supabase.from("coaches").insert({ userid, specializzazione: "Da definire" }).select().single();
+      }
+    } else if (ruolo === RuoloEnum.GESTORE) {
+      const { data: existing } = await supabase.from("gestori").select("id").eq("userid", userid).single();
+      if (!existing) {
+        await supabase.from("gestori").insert({ userid }).select().single();
+      }
+    }
+
+    return aggiornato;
+  }
 }
