@@ -27,7 +27,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
     "/api/gyms/coupon": ["GESTORE", "ADMIN"],
     "/api/gyms/corsi": ["GESTORE", "ADMIN"],
     "/api/gyms/me": ["GESTORE", "ADMIN"],
-    "/api/gyms": ["ADMIN"],
+    "/api/gyms": ["GESTORE", "ADMIN"],
     // Coaches
     "/api/coaches/prenotazioni": ["UTENTE", "COACH", "ADMIN"],
     "/api/coaches/me": ["COACH", "ADMIN"],

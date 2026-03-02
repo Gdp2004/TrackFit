@@ -59,7 +59,11 @@ export async function PUT(req: NextRequest) {
     try {
         const body = await req.json();
         const parsed = AggiornaStrutturaSchema.safeParse(body);
-        if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+        if (!parsed.success) {
+            const msgs = Object.entries(parsed.error.flatten().fieldErrors)
+                .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`).join(" | ");
+            return NextResponse.json({ error: msgs || "Dati non validi" }, { status: 400 });
+        }
 
         const service = buildService();
         const struttura = await service.getStrutturaGestore(userid);

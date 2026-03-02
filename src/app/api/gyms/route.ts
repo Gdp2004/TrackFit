@@ -25,7 +25,7 @@ const CreaStrutturaSchema = z.object({
     cun: z.string().min(1),
     denominazione: z.string().min(1),
     indirizzo: z.string().min(1),
-    gestoreid: z.string().uuid(),
+    // gestoreid viene iniettato dal middleware via x-user-id header
 });
 
 const CreaCorsoSchema = z.object({
@@ -55,7 +55,11 @@ export async function POST(req: NextRequest) {
         if (action === "onboard-coach") {
             // ─── UC2: Onboard Coach ───────────────────────────────────────────
             const parsed = OnboardCoachSchema.safeParse(body);
-            if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+            if (!parsed.success) {
+                const msgs = Object.entries(parsed.error.flatten().fieldErrors)
+                    .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`).join(" | ");
+                return NextResponse.json({ error: msgs || "Dati non validi" }, { status: 400 });
+            }
 
             // L\'email del gestore è ricavata preferibilmente dal token, ma qui usiamo x-user-id come traccia
             const tokenUtenteId = req.headers.get("x-user-id") || "SISTEMA";
@@ -71,7 +75,11 @@ export async function POST(req: NextRequest) {
         if (action === "corso") {
             // ─── FR6: Crea corso ──────────────────────────────────────────────
             const parsed = CreaCorsoSchema.safeParse(body);
-            if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+            if (!parsed.success) {
+                const msgs = Object.entries(parsed.error.flatten().fieldErrors)
+                    .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`).join(" | ");
+                return NextResponse.json({ error: msgs || "Dati non validi" }, { status: 400 });
+            }
             const corso = await service.creaCorso({
                 strutturaid: parsed.data.strutturaid,
                 nome: parsed.data.nome,
@@ -83,15 +91,22 @@ export async function POST(req: NextRequest) {
             return NextResponse.json(corso, { status: 201 });
         }
 
-        // ─── FR5: Crea struttura ──────────────────────────────────────────────
+        // ─── FR5: Crea struttura (GESTORE o ADMIN) ───────────────────────────
+        const gestoreid = req.headers.get("x-user-id");
+        if (!gestoreid) return NextResponse.json({ error: "Non autenticato." }, { status: 401 });
+
         const parsed = CreaStrutturaSchema.safeParse(body);
-        if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+        if (!parsed.success) {
+            const msgs = Object.entries(parsed.error.flatten().fieldErrors)
+                .map(([k, v]) => `${k}: ${(v as string[]).join(", ")}`).join(" | ");
+            return NextResponse.json({ error: msgs || "Dati non validi" }, { status: 400 });
+        }
         const struttura = await service.creaStruttura(
             parsed.data.piva,
             parsed.data.cun,
             parsed.data.denominazione,
             parsed.data.indirizzo,
-            parsed.data.gestoreid
+            gestoreid          // ←  dall'header, non dal body
         );
         return NextResponse.json(struttura, { status: 201 });
     } catch (err: unknown) {
@@ -100,13 +115,33 @@ export async function POST(req: NextRequest) {
 }
 
 // GET /api/gyms?strutturaid=xxx – Lista corsi (FR6)
+// GET /api/gyms?search=query    – Cerca strutture per nome/indirizzo
 export async function GET(req: NextRequest) {
     const strutturaid = req.nextUrl.searchParams.get("strutturaid");
-    if (!strutturaid) return NextResponse.json({ error: "strutturaid obbligatorio" }, { status: 400 });
+    const search = req.nextUrl.searchParams.get("search");
+
     try {
         const service = buildService();
-        const corsi = await service.getCorsiStruttura(strutturaid);
-        return NextResponse.json(corsi);
+
+        if (search) {
+            // ─── Ricerca strutture ────────────────────────────────────────────
+            const supabase = (await import("@/backend/infrastructure/config/supabase")).createSupabaseServerClient();
+            const { data, error } = await supabase
+                .from("strutture")
+                .select("id, denominazione, indirizzo, telefono, email, sito, stato, piva")
+                .or(`denominazione.ilike.%${search}%,indirizzo.ilike.%${search}%`)
+                .order("denominazione");
+            if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+            return NextResponse.json(data ?? []);
+        }
+
+        if (strutturaid) {
+            // ─── Lista corsi per struttura ─────────────────────────────────
+            const corsi = await service.getCorsiStruttura(strutturaid);
+            return NextResponse.json(corsi);
+        }
+
+        return NextResponse.json({ error: "Parametro mancante: strutturaid o search" }, { status: 400 });
     } catch (err: unknown) {
         return NextResponse.json({ error: String(err) }, { status: 500 });
     }

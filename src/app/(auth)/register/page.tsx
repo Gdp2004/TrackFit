@@ -6,44 +6,26 @@ import { useRouter } from "next/navigation";
 import { Input } from "@frontend/components/ui/Input";
 import { Button } from "@frontend/components/ui/Button";
 
-const RUOLI = [
-    { value: "UTENTE", label: "🏃 Atleta" },
-    { value: "COACH", label: "🎯 Coach" },
-    { value: "GESTORE", label: "🏋️ Gestore Palestra" },
-];
-
 export default function RegisterPage() {
     const router = useRouter();
     const [form, setForm] = useState({
         nome: "", cognome: "", email: "", password: "",
-        ruolo: "UTENTE", specializzazione: "",
     });
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    const set = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
         setForm((f) => ({ ...f, [field]: e.target.value }));
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
-
-        // Validazione client: specializzazione obbligatoria per COACH
-        if (form.ruolo === "COACH" && !form.specializzazione.trim()) {
-            setError("La specializzazione è obbligatoria per il Coach.");
-            return;
-        }
-
         setLoading(true);
         try {
-            const body: Record<string, unknown> = { ...form, consensoTermini: true };
-            // Rimuovi specializzazione se il ruolo non è COACH
-            if (form.ruolo !== "COACH") delete body.specializzazione;
-
             const res = await fetch("/api/auth", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body),
+                body: JSON.stringify({ ...form, ruolo: "UTENTE", consensoTermini: true }),
             });
             const data = await res.json();
             if (!res.ok) { setError(data.error ?? "Errore di registrazione"); setLoading(false); return; }
@@ -71,36 +53,6 @@ export default function RegisterPage() {
                 </div>
                 <Input id="email" label="Email" type="email" placeholder="mario@esempio.it" icon="✉️" value={form.email} onChange={set("email")} required />
                 <Input id="password" label="Password" type="password" placeholder="min. 8 caratteri" icon="🔒" value={form.password} onChange={set("password")} required minLength={8} />
-
-                {/* Ruolo selector */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-                    <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "hsl(var(--tf-text-muted))" }}>
-                        Ruolo
-                    </label>
-                    <select
-                        value={form.ruolo}
-                        onChange={set("ruolo")}
-                        className="tf-input"
-                        style={{ cursor: "pointer" }}
-                    >
-                        {RUOLI.map((r) => (
-                            <option key={r.value} value={r.value}>{r.label}</option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Specializzazione – visibile solo per COACH */}
-                {form.ruolo === "COACH" && (
-                    <Input
-                        id="specializzazione"
-                        label="Specializzazione"
-                        placeholder="es. Atletica, Nuoto, CrossFit..."
-                        icon="🏅"
-                        value={form.specializzazione}
-                        onChange={set("specializzazione")}
-                        required
-                    />
-                )}
 
                 {error && (
                     <p style={{ padding: "0.75rem", borderRadius: "var(--tf-radius-sm)", background: "hsl(var(--tf-danger)/.15)", color: "hsl(var(--tf-danger))", fontSize: "0.8rem" }}>

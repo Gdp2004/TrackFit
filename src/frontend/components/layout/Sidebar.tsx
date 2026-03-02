@@ -38,10 +38,9 @@ const NAV_BY_ROLE: Record<RuoloEnum, NavItem[]> = {
   ],
   [RuoloEnum.GESTORE]: [
     { href: "/gyms/struttura", label: "Struttura", icon: "🏋️" },
-    { href: "/subscription", label: "Abbonamenti", icon: "💳" },
+    { href: "/gyms/abbonamenti", label: "Abbonamenti", icon: "💳" },
     { href: "/gyms/corsi", label: "Corsi", icon: "📆" },
     { href: "/gyms/coupon", label: "Coupon", icon: "🎟️" },
-    { href: "/reports", label: "Report", icon: "📈" },
   ],
   [RuoloEnum.ADMIN]: [
     { href: "/workouts", label: "Allenamenti", icon: "🏃" },
@@ -52,13 +51,6 @@ const NAV_BY_ROLE: Record<RuoloEnum, NavItem[]> = {
   ],
 };
 
-/** Badge e colori per ruolo */
-const ROLE_META: Record<RuoloEnum, { label: string; color: string; accent: string }> = {
-  [RuoloEnum.UTENTE]: { label: "Atleta", color: "hsl(var(--tf-primary))", accent: "hsl(var(--tf-primary)/.15)" },
-  [RuoloEnum.COACH]: { label: "Coach", color: "hsl(var(--tf-accent))", accent: "hsl(var(--tf-accent)/.15)" },
-  [RuoloEnum.GESTORE]: { label: "Gestore", color: "hsl(145 60% 45%)", accent: "hsl(145 60% 45%/.15)" },
-  [RuoloEnum.ADMIN]: { label: "Admin", color: "hsl(0 70% 55%)", accent: "hsl(0 70% 55%/.15)" },
-};
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -66,7 +58,6 @@ export function Sidebar() {
 
   const dashboardHref = ruolo ? ROLE_DASHBOARD[ruolo] : "/dashboard";
   const roleItems = ruolo ? NAV_BY_ROLE[ruolo] : NAV_BY_ROLE[RuoloEnum.UTENTE];
-  const meta = ruolo ? ROLE_META[ruolo] : ROLE_META[RuoloEnum.UTENTE];
 
   const allItems: NavItem[] = [
     { href: dashboardHref, label: "Dashboard", icon: "⊞" },
@@ -115,25 +106,7 @@ export function Sidebar() {
         }}>TrackFit</span>
       </Link>
 
-      {/* Role badge */}
-      {ruolo && (
-        <div style={{
-          margin: "0 0.25rem 1.5rem",
-          padding: "0.5rem 0.875rem",
-          borderRadius: "var(--tf-radius-sm)",
-          background: meta.accent,
-          border: `1px solid ${meta.color}33`,
-          display: "flex", alignItems: "center", gap: "0.5rem",
-        }}>
-          <span style={{
-            width: 8, height: 8, borderRadius: "50%",
-            background: meta.color, flexShrink: 0,
-          }} />
-          <span style={{ fontSize: "0.75rem", fontWeight: 700, color: meta.color, letterSpacing: "0.04em" }}>
-            {meta.label}
-          </span>
-        </div>
-      )}
+
 
       {/* Nav Items */}
       <nav style={{ display: "flex", flexDirection: "column", gap: "0.25rem", flex: 1 }}>
