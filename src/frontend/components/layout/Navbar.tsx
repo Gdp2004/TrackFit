@@ -55,9 +55,9 @@ export function Navbar() {
 
   // Voci menu in base al ruolo
   const menuItems: DropdownItem[] = [
-    { type: "link", href: dashboardHref, icon: "⊞", label: "Dashboard" },
+    { type: "link", href: dashboardHref, icon: "💻", label: "Dashboard" },
     { type: "link", href: "/profile", icon: "👤", label: "Il mio profilo" },
-    { type: "link", href: "/api/users/me", icon: "⚙️", label: "Impostazioni account" },
+    { type: "link", href: "/profile", icon: "⚙️", label: "Impostazioni account" },
     ...(ruolo === RuoloEnum.UTENTE
       ? [
         { type: "link" as const, href: "/subscription", icon: "💳", label: "Abbonamento" },

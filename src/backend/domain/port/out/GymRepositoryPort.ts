@@ -9,6 +9,7 @@ export interface GymRepositoryPort {
     saveStruttura(struttura: Partial<Struttura>): Promise<Struttura>;
     findStrutturaById(id: string): Promise<Struttura | null>;
     findStrutturaByGestoreId(gestoreid: string): Promise<Struttura | null>;
+    findStruttureByGestoreId(gestoreid: string): Promise<Struttura[]>;   // multi-struttura
     updateStruttura(id: string, data: Partial<Struttura>): Promise<Struttura>;
     matchStruttureFuzzy(denominazione: string, indirizzo: string): Promise<Struttura[]>; // R9: pg_trgm fuzzy dedup
     existsStrutturaByPivaOrCun(piva: string, cun: string): Promise<boolean>;

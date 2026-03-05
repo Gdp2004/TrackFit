@@ -59,7 +59,7 @@ export function Sidebar() {
   const roleItems = ruolo ? NAV_BY_ROLE[ruolo] : NAV_BY_ROLE[RuoloEnum.UTENTE];
 
   const allItems: NavItem[] = [
-    { href: dashboardHref, label: "Dashboard", icon: "⊞" },
+    { href: dashboardHref, label: "Dashboard", icon: "💻" },
     ...roleItems,
     ...NAV_COMMON,
   ];
@@ -106,6 +106,9 @@ export function Sidebar() {
       </Link>
 
 
+
+      {/* Spacer invisibile (serve per distanziare il logo in alto dal bottone dashboard)*/}
+      <div style={{ height: "2rem", pointerEvents: "none", userSelect: "none" }} aria-hidden="true" />
 
       {/* Nav Items */}
       <nav style={{ display: "flex", flexDirection: "column", gap: "0.25rem", flex: 1 }}>

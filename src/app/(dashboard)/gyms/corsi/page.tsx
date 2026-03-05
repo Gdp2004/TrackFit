@@ -46,11 +46,12 @@ export default function CorsiPage() {
     const [search, setSearch] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [deleting, setDeleting] = useState<string | null>(null);
-    const [newCorso, setNewCorso] = useState({ nome: "", dataora: "", durata: 60, maxPartecipanti: 20, prezzo: 0 });
+    const defaultDate = (() => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d.toISOString().slice(0, 16); })();
+    const [newCorso, setNewCorso] = useState({ nome: "", dataora: defaultDate, durata: 60, maxPartecipanti: 20, prezzo: 0 });
     const [creating, setCreating] = useState(false);
 
     const fetchCorsi = async (sid: string) => {
-        const res = await fetch(`/api/gyms/${sid}/corsi`);
+        const res = await fetch(`/api/gyms?strutturaid=${sid}`);
         if (!res.ok) return;
         const data = await res.json();
         const list = data?.data ?? data ?? [];
@@ -90,7 +91,13 @@ export default function CorsiPage() {
             const res = await fetch("/api/gyms?action=corso", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ strutturaid, ...newCorso }),
+                body: JSON.stringify({
+                    strutturaid,
+                    nome: newCorso.nome,
+                    dataora: new Date(newCorso.dataora).toISOString(),
+                    durata: newCorso.durata,
+                    capacitamassima: newCorso.maxPartecipanti,
+                }),
             });
             if (res.ok) {
                 await fetchCorsi(strutturaid);
@@ -216,7 +223,7 @@ export default function CorsiPage() {
                         <h2 style={{ fontWeight: 800, marginBottom: "1.5rem" }}>+ Nuovo Corso</h2>
                         <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                             <div><label style={labelSt}>Nome Corso *</label><input style={inputSt} required value={newCorso.nome} onChange={e => setNewCorso(p => ({ ...p, nome: e.target.value }))} /></div>
-                            <div><label style={labelSt}>Data e Ora *</label><input style={inputSt} type="datetime-local" required value={newCorso.dataora} onChange={e => setNewCorso(p => ({ ...p, dataora: e.target.value }))} /></div>
+                            <div><label style={labelSt}>Data e Ora *</label><input style={inputSt} type="datetime-local" value={newCorso.dataora} onChange={e => setNewCorso(p => ({ ...p, dataora: e.target.value }))} /></div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.75rem" }}>
                                 <div><label style={labelSt}>Durata (min)</label><input style={inputSt} type="number" min={15} value={newCorso.durata} onChange={e => setNewCorso(p => ({ ...p, durata: +e.target.value }))} /></div>
                                 <div><label style={labelSt}>Max partecipanti</label><input style={inputSt} type="number" min={1} value={newCorso.maxPartecipanti} onChange={e => setNewCorso(p => ({ ...p, maxPartecipanti: +e.target.value }))} /></div>

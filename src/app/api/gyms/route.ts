@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
 }
 
 // GET /api/gyms?strutturaid=xxx – Lista corsi (FR6)
-// GET /api/gyms?search=query    – Cerca strutture per nome/indirizzo
+// GET /api/gyms?search=query    – Cerca strutture per nome/indirizzo (search vuoto = tutte)
 export async function GET(req: NextRequest) {
     const strutturaid = req.nextUrl.searchParams.get("strutturaid");
     const search = req.nextUrl.searchParams.get("search");
@@ -123,14 +123,17 @@ export async function GET(req: NextRequest) {
     try {
         const service = buildService();
 
-        if (search) {
-            // ─── Ricerca strutture ────────────────────────────────────────────
+        if (search !== null) {
+            // ─── Ricerca strutture (search="" → tutte, altrimenti filtra) ────────
             const supabase = (await import("@/backend/infrastructure/config/supabase")).createSupabaseServerClient();
-            const { data, error } = await supabase
+            let query = supabase
                 .from("strutture")
                 .select("id, denominazione, indirizzo, telefono, email, sito, stato, piva")
-                .or(`denominazione.ilike.%${search}%,indirizzo.ilike.%${search}%`)
                 .order("denominazione");
+            if (search.trim()) {
+                query = query.or(`denominazione.ilike.%${search}%,indirizzo.ilike.%${search}%`);
+            }
+            const { data, error } = await query;
             if (error) return NextResponse.json({ error: error.message }, { status: 500 });
             return NextResponse.json(data ?? []);
         }
