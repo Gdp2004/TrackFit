@@ -48,6 +48,11 @@ export function WorkoutCard({ workout }: WorkoutCardProps) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "hsl(var(--tf-text))" }}>
             {workout.tipo.charAt(0) + workout.tipo.slice(1).toLowerCase()}
+            {workout.athleteName && (
+              <span style={{ fontWeight: 400, color: "hsl(var(--tf-text-muted))", marginLeft: "0.4rem" }}>
+                · {workout.athleteName}
+              </span>
+            )}
           </p>
           <p style={{ fontSize: "0.78rem", color: "hsl(var(--tf-text-muted))", marginTop: 2 }}>
             {new Date(workout.dataora).toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}

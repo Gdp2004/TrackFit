@@ -87,4 +87,35 @@ export class WorkoutSupabaseAdapter implements WorkoutRepositoryPort {
         if (error) return null;
         return data as Workout;
     }
+
+    async findByCoachId(coachid: string): Promise<Workout[]> {
+        const { data: users, error: errUsers } = await this.db
+            .from("users")
+            .select("id, nome, cognome")
+            .eq("coachid", coachid);
+
+        if (errUsers) throw new Error(errUsers.message);
+
+        const userIds = (users ?? []).map((u) => u.id);
+        if (userIds.length === 0) return [];
+
+        const userMap = new Map<string, string>();
+        users?.forEach(u => {
+            userMap.set(u.id, (`${u.nome || ""} ${u.cognome || ""}`).trim() || "Atleta");
+        });
+
+        const { data, error } = await this.db
+            .from("workouts")
+            .select("*")
+            .in("userid", userIds)
+            .order("dataora", { ascending: false });
+
+        if (error) throw new Error(error.message);
+
+        const workouts = (data as Workout[]) ?? [];
+        return workouts.map(w => ({
+            ...w,
+            athleteName: userMap.get(w.userid)
+        }));
+    }
 }

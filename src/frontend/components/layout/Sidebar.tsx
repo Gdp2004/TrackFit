@@ -34,7 +34,6 @@ const NAV_BY_ROLE: Record<RuoloEnum, NavItem[]> = {
     { href: "/coaches/atleti", label: "Miei Atleti", icon: "👥" },
     { href: "/coaches/disponibilita", label: "Disponibilità", icon: "🗓️" },
     { href: "/coaches/piani", label: "Piani", icon: "📋" },
-    { href: "/reports", label: "Report", icon: "📊" },
   ],
   [RuoloEnum.GESTORE]: [
     { href: "/gyms/struttura", label: "Struttura", icon: "🏋️" },

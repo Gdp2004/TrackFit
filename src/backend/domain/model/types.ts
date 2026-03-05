@@ -81,6 +81,7 @@ export interface Workout {
     gpxtrace?: string;          // URL file GPX (Supabase Storage)
     stravaid?: string;          // deduplication UC5
     sorgente: "TRACKING" | "IMPORT";
+    athleteName?: string;       // added for coach sessions view
 }
 
 /** Snapshot locale per crash recovery – salvato ogni 30s (SDD UC4) */

@@ -33,4 +33,6 @@ export interface WorkoutManagementPort {
     sincronizzaSessione(workoutId: string): Promise<void>;
 
     getSessioniUtente(userid: string): Promise<Workout[]>;
+
+    getSessioniCoach(coachid: string): Promise<Workout[]>;
 }

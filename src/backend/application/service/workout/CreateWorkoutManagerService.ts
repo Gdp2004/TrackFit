@@ -103,4 +103,8 @@ export class CreateWorkoutManagerService implements WorkoutManagementPort {
     async getSessioniUtente(userid: string): Promise<Workout[]> {
         return this.workoutRepo.findByUserId(userid);
     }
+
+    async getSessioniCoach(coachid: string): Promise<Workout[]> {
+        return this.workoutRepo.findByCoachId(coachid);
+    }
 }

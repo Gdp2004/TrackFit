@@ -16,4 +16,5 @@ export interface WorkoutRepositoryPort {
     delete(id: string): Promise<void>;
     existsById(id: string): Promise<boolean>;
     findByStravaId(stravaid: string): Promise<Workout | null>;
+    findByCoachId(coachid: string): Promise<Workout[]>;
 }

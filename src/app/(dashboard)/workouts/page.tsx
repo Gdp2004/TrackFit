@@ -10,31 +10,36 @@ import type { Workout } from "@backend/domain/model/types";
 import { WorkoutStatoEnum, TipoWorkoutEnum } from "@backend/domain/model/enums";
 
 const MOCK: Workout[] = [
-    { id: "1", userid: "u1", tipo: "CORSA", dataora: new Date(Date.now() - 86400000).toISOString(), durata: 45, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 8.3, calorie: 420, sorgente: "TRACKING" },
-    { id: "2", userid: "u1", tipo: "PALESTRA", dataora: new Date(Date.now() - 172800000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, calorie: 280, sorgente: "TRACKING" },
-    { id: "3", userid: "u1", tipo: "CICLISMO", dataora: new Date(Date.now() + 86400000).toISOString(), durata: 90, stato: WorkoutStatoEnum.PIANIFICATA, distanza: 25, sorgente: "TRACKING" },
-    { id: "4", userid: "u1", tipo: "NUOTO", dataora: new Date(Date.now() - 259200000).toISOString(), durata: 40, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 1.5, calorie: 300, sorgente: "TRACKING" },
-    { id: "5", userid: "u1", tipo: "YOGA", dataora: new Date(Date.now() - 345600000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, sorgente: "TRACKING" },
+    { id: "1", userid: "u1", athleteName: "Mario Rossi", tipo: "CORSA", dataora: new Date(Date.now() - 86400000).toISOString(), durata: 45, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 8.3, calorie: 420, sorgente: "TRACKING" },
+    { id: "2", userid: "u1", athleteName: "Mario Rossi", tipo: "PALESTRA", dataora: new Date(Date.now() - 172800000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, calorie: 280, sorgente: "TRACKING" },
+    { id: "3", userid: "u2", athleteName: "Luigi Bianchi", tipo: "CICLISMO", dataora: new Date(Date.now() + 86400000).toISOString(), durata: 90, stato: WorkoutStatoEnum.PIANIFICATA, distanza: 25, sorgente: "TRACKING" },
+    { id: "4", userid: "u3", athleteName: "Anna Neri", tipo: "NUOTO", dataora: new Date(Date.now() - 259200000).toISOString(), durata: 40, stato: WorkoutStatoEnum.CONSOLIDATA, distanza: 1.5, calorie: 300, sorgente: "TRACKING" },
+    { id: "5", userid: "u2", athleteName: "Luigi Bianchi", tipo: "YOGA", dataora: new Date(Date.now() - 345600000).toISOString(), durata: 60, stato: WorkoutStatoEnum.CONSOLIDATA, sorgente: "TRACKING" },
 ];
 
 type FilterStato = "TUTTI" | WorkoutStatoEnum;
 type FilterTipo = "TUTTI" | TipoWorkoutEnum;
 
 export default function WorkoutsPage() {
-    const { user } = useAuth();
+    const { user, ruolo } = useAuth();
     const [workouts, setWorkouts] = useState<Workout[]>([]);
     const [loading, setLoading] = useState(true);
     const [filterStato, setFilterStato] = useState<FilterStato>("TUTTI");
     const [filterTipo, setFilterTipo] = useState<FilterTipo>("TUTTI");
 
     useEffect(() => {
-        if (!user) return;
-        fetch(`/api/workouts?userid=${user.id}`)
+        if (!user || !ruolo) return;
+        const endpoint = ruolo === "COACH"
+            ? `/api/workouts?coachid=${user.id}`
+            : `/api/workouts?userid=${user.id}`;
+
+        fetch(endpoint)
             .then((r) => r.json())
             .then((d: Workout[]) => setWorkouts(Array.isArray(d) && d.length > 0 ? d : MOCK))
             .catch(() => setWorkouts(MOCK))
             .finally(() => setLoading(false));
-    }, [user]);
+    }, [user, ruolo]);
+
 
     const STATI: FilterStato[] = ["TUTTI", WorkoutStatoEnum.PIANIFICATA, WorkoutStatoEnum.IN_CORSO, WorkoutStatoEnum.CONSOLIDATA, WorkoutStatoEnum.INTERROTTA];
     const filtered = workouts.filter((w) => {

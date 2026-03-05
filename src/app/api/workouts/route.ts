@@ -56,16 +56,24 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// ─── GET /api/workouts?userid=xxx ── lista sessioni utente ───────────────────
+// ─── GET /api/workouts?userid=xxx&coachid=yyy ── lista sessioni utente o coach ──
 export async function GET(req: NextRequest) {
     try {
         const userid = req.nextUrl.searchParams.get("userid");
-        if (!userid) {
-            return NextResponse.json({ error: "userid obbligatorio" }, { status: 400 });
+        const coachid = req.nextUrl.searchParams.get("coachid");
+
+        if (!userid && !coachid) {
+            return NextResponse.json({ error: "userid o coachid obbligatorio" }, { status: 400 });
         }
 
         const service = buildService();
-        const workouts = await service.getSessioniUtente(userid);
+        let workouts;
+
+        if (coachid) {
+            workouts = await service.getSessioniCoach(coachid);
+        } else if (userid) {
+            workouts = await service.getSessioniUtente(userid);
+        }
 
         return NextResponse.json(workouts);
     } catch (err: unknown) {

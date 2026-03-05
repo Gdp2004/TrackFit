@@ -21,22 +21,27 @@ const MOCK_REPORT: Report = {
 };
 
 export default function ReportsPage() {
-    const { user } = useAuth();
+    const { user, ruolo } = useAuth();
     const [period, setPeriod] = useState<Period>("30");
     const [report, setReport] = useState<Report>(MOCK_REPORT);
     const [loading, setLoading] = useState(false);
     const [exporting, setExporting] = useState(false);
 
     useEffect(() => {
-        if (!user) return;
+        if (!user || !ruolo) return;
         setLoading(true);
         const labels: Record<Period, string> = { "7": "Ultimi 7 giorni", "30": "Ultimi 30 giorni", "90": "Ultimi 90 giorni" };
-        fetch(`/api/reports?userid=${user.id}&periodo=${period}&tipo=UTENTE`)
+
+        const query = ruolo === "COACH"
+            ? `coachid=${user.id}&periodo=${period}&tipo=COACH`
+            : `userid=${user.id}&periodo=${period}&tipo=UTENTE`;
+
+        fetch(`/api/reports?${query}`)
             .then((r) => r.json())
             .then((d: Report) => setReport({ ...MOCK_REPORT, ...d, periodo: labels[period] }))
             .catch(() => setReport({ ...MOCK_REPORT, periodo: labels[period] }))
             .finally(() => setLoading(false));
-    }, [user, period]);
+    }, [user, ruolo, period]);
 
     const handleExport = (format: "PDF" | "CSV") => {
         setExporting(true);
