@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabaseBrowser } from "@frontend/lib/supabase-browser";
 import { Input } from "@frontend/components/ui/Input";
 import { Button } from "@frontend/components/ui/Button";
@@ -16,12 +16,25 @@ const ROLE_DASHBOARD: Record<string, string> = {
     [RuoloEnum.ADMIN]: "/dashboard",
 };
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [fadeOut, setFadeOut] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get("registered") === "1") {
+            setShowSuccess(true);
+            // Dopo 3.5 s avvia la dissolvenza, poi nasconde completamente a 4 s
+            const fadeTimer = setTimeout(() => setFadeOut(true), 3500);
+            const hideTimer = setTimeout(() => setShowSuccess(false), 4200);
+            return () => { clearTimeout(fadeTimer); clearTimeout(hideTimer); };
+        }
+    }, [searchParams]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,6 +52,30 @@ export default function LoginPage() {
 
     return (
         <div>
+            {/* Banner registrazione avvenuta con successo */}
+            {showSuccess && (
+                <div
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "0.6rem",
+                        marginBottom: "1.5rem",
+                        padding: "0.85rem 1rem",
+                        borderRadius: "var(--tf-radius-sm)",
+                        background: "hsl(142 70% 45% / 0.15)",
+                        border: "1px solid hsl(142 70% 45% / 0.4)",
+                        color: "hsl(142 60% 38%)",
+                        fontSize: "0.875rem",
+                        fontWeight: 500,
+                        opacity: fadeOut ? 0 : 1,
+                        transition: "opacity 0.7s ease",
+                    }}
+                >
+                    <span style={{ fontSize: "1.1rem" }}>✅</span>
+                    <span>Registrazione avvenuta con successo! Accedi al tuo account.</span>
+                </div>
+            )}
+
             {/* Header */}
             <div style={{ marginBottom: "2rem" }}>
                 <h2 style={{ fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: "0.5rem" }}>
@@ -102,5 +139,13 @@ export default function LoginPage() {
                 </Link>
             </p>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense>
+            <LoginForm />
+        </Suspense>
     );
 }
