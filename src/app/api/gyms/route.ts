@@ -135,13 +135,21 @@ export async function GET(req: NextRequest) {
             }
             const { data, error } = await query;
             if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-            return NextResponse.json(data ?? []);
+            return NextResponse.json(data ?? [], {
+                headers: {
+                    "Cache-Control": "s-maxage=60, stale-while-revalidate=120"
+                }
+            });
         }
 
         if (strutturaid) {
             // ─── Lista corsi per struttura ─────────────────────────────────
             const corsi = await service.getCorsiStruttura(strutturaid);
-            return NextResponse.json(corsi);
+            return NextResponse.json(corsi, {
+                headers: {
+                    "Cache-Control": "s-maxage=60, stale-while-revalidate=120"
+                }
+            });
         }
 
         return NextResponse.json({ error: "Parametro mancante: strutturaid o search" }, { status: 400 });

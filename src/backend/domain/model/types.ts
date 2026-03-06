@@ -99,7 +99,7 @@ export interface Abbonamento {
     strutturaid?: string;
     tipoid?: string;
     stato: StatoAbbonamentoEnum;
-    qrCode?: string;
+    qrcode?: string;
     datainizio: string;
     datafine: string;
     importo: number;

@@ -34,9 +34,9 @@ export class SubscriptionSupabaseAdapter implements SubscriptionRepositoryPort {
         return data as Abbonamento;
     }
 
-    async findByQrCode(qrCode: string): Promise<Abbonamento | null> {
+    async findByQrCode(qrcode: string): Promise<Abbonamento | null> {
         const supabase = createSupabaseServerClient();
-        const { data, error } = await supabase.from("abbonamenti").select("*").eq("qrCode", qrCode).single();
+        const { data, error } = await supabase.from("abbonamenti").select("*").eq("qrcode", qrcode).single();
         if (error) return null;
         return data as Abbonamento;
     }

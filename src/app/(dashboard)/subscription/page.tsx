@@ -8,27 +8,64 @@ import { SubscriptionCard } from "@frontend/components/subscription/Subscription
 import { PaymentHistory } from "@frontend/components/subscription/PaymentHistory";
 import type { Abbonamento, Pagamento } from "@backend/domain/model/types";
 import { StatoAbbonamentoEnum, StatoPagamentoEnum } from "@backend/domain/model/enums";
-
-const MOCK_ABBONAMENTO: Abbonamento = {
-    id: "ab1", userid: "u1", strutturaid: "g1",
-    stato: StatoAbbonamentoEnum.ATTIVO,
-    qrCode: "TF-AB1-2025-NAPOLI-ABCDEFGH1234",
-    datainizio: new Date(Date.now() - 30 * 86400000).toISOString(),
-    datafine: new Date(Date.now() + 60 * 86400000).toISOString(),
-    importo: 89,
-};
-
-const MOCK_PAGAMENTI: Pagamento[] = [
-    { id: "p1", userid: "u1", abbonamentoid: "ab1", importo: 89, valuta: "eur", stato: StatoPagamentoEnum.COMPLETATO, metodo: "card", createdat: new Date(Date.now() - 30 * 86400000).toISOString() },
-    { id: "p2", userid: "u1", abbonamentoid: "ab1", importo: 89, valuta: "eur", stato: StatoPagamentoEnum.COMPLETATO, metodo: "card", createdat: new Date(Date.now() - 120 * 86400000).toISOString() },
-];
+import { PurchaseFlow } from "@frontend/components/subscription/PurchaseFlow";
+import { useAuth } from "@frontend/contexts/AuthContext";
+import { useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function SubscriptionPage() {
+    const { user } = useAuth();
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const paymentStatus = searchParams.get("payment_status");
+
     const [coupon, setCoupon] = useState("");
     const [couponMsg, setCouponMsg] = useState<string | null>(null);
+    const [abbonamento, setAbbonamento] = useState<Abbonamento | null>(null);
+    const [pagamenti, setPagamenti] = useState<Pagamento[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchSubscriptionData = async () => {
+        if (!user) return;
+        setLoading(true);
+        try {
+            // 1. Fetch abbonamento attivo
+            const subRes = await fetch(`/api/subscriptions?userid=${user.id}`);
+            if (subRes.ok) {
+                const subData = await subRes.json();
+                setAbbonamento(subData);
+            }
+
+            // 2. Fetch storico pagamenti
+            const payRes = await fetch(`/api/subscriptions/payments?userid=${user.id}`);
+            if (payRes.ok) {
+                const payData = await payRes.json();
+                setPagamenti(payData.payments || []);
+            }
+        } catch (e) {
+            console.error("Errore fetch dati abbonamento:", e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchSubscriptionData();
+
+        // Se l'utente è stato reindirizzato da Stripe dopo il pagamento
+        if (paymentStatus === "success") {
+            // Rimuovi il search param e mostra un messaggio di successo
+            router.replace("/subscription", undefined);
+            setTimeout(() => {
+                alert("Pagamento completato con successo! Il tuo abbonamento è ora attivo.");
+            }, 500);
+        }
+    }, [user, paymentStatus]);
 
     const handleCoupon = () => {
         if (!coupon.trim()) return;
+        // Solo un mock per gestire il coupon. Più avanti potremmo voler connettere questo 
+        // a una logica reale (es: validandolo prima del rinnovo o per rimborsi parziali)
         setCouponMsg(coupon.toUpperCase() === "TRACKFIT10" ? "✅ Coupon applicato: sconto 10%" : "❌ Coupon non valido");
         setTimeout(() => setCouponMsg(null), 4000);
     };
@@ -43,41 +80,71 @@ export default function SubscriptionPage() {
             </div>
 
             <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-                {/* Abbonamento attivo */}
-                <SubscriptionCard abbonamento={MOCK_ABBONAMENTO} />
-
-                {/* Coupon */}
-                <Card title="Applica coupon">
-                    <div style={{ display: "flex", gap: "0.75rem" }}>
-                        <div style={{ flex: 1 }}>
-                            <Input
-                                id="coupon"
-                                placeholder="Es. TRACKFIT10"
-                                icon="🏷️"
-                                value={coupon}
-                                onChange={(e) => setCoupon(e.target.value)}
-                            />
-                        </div>
-                        <Button onClick={handleCoupon}>Applica</Button>
+                {loading ? (
+                    <div style={{ textAlign: "center", padding: "3rem", color: "hsl(var(--tf-text-muted))" }}>
+                        <div style={{ fontSize: "2rem" }}>⏳</div>
+                        <p>Caricamento dettagli abbonamento...</p>
                     </div>
-                    {couponMsg && (
-                        <p style={{
-                            marginTop: "0.625rem", fontSize: "0.825rem", fontWeight: 600,
-                            color: couponMsg.startsWith("✅") ? "hsl(var(--tf-accent))" : "hsl(var(--tf-danger))"
+                ) : !abbonamento ? (
+                    <>
+                        {/* Nessun abbonamento -> Mostra il flusso di acquisto */}
+                        <div style={{
+                            padding: "1.5rem", borderRadius: "var(--tf-radius)",
+                            background: "hsl(var(--tf-surface))", border: "1px solid hsl(var(--tf-border))",
+                            textAlign: "center"
                         }}>
-                            {couponMsg}
-                        </p>
-                    )}
-                </Card>
+                            <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🏋️</div>
+                            <h2 style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: "0.25rem" }}>Non hai un piano attivo</h2>
+                            <p style={{ fontSize: "0.875rem", color: "hsl(var(--tf-text-muted))", marginBottom: "1.5rem" }}>
+                                Scegli una palestra e attiva un abbonamento per iniziare ad allenarti e prenotare i corsi.
+                            </p>
+                        </div>
+                        <PurchaseFlow onSuccess={() => {
+                            alert("Pagamento elaborato con successo!");
+                            fetchSubscriptionData();
+                        }} />
+                    </>
+                ) : (
+                    <>
+                        {/* Abbonamento attivo */}
+                        <SubscriptionCard abbonamento={abbonamento} />
 
-                {/* Storico pagamenti */}
-                <Card title="Storico pagamenti">
-                    <PaymentHistory payments={MOCK_PAGAMENTI} />
-                    <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem" }}>
-                        <Button variant="secondary" size="sm">📄 Esporta PDF</Button>
-                        <Button variant="secondary" size="sm">📊 Esporta CSV</Button>
-                    </div>
-                </Card>
+                        {/* Coupon (visibile solo se hai un abbonamento, o forse per applicarlo al prossimo rinnovo) */}
+                        <Card title="Applica coupon al rinnovo">
+                            <div style={{ display: "flex", gap: "0.75rem" }}>
+                                <div style={{ flex: 1 }}>
+                                    <Input
+                                        id="coupon"
+                                        placeholder="Es. TRACKFIT10"
+                                        icon="🏷️"
+                                        value={coupon}
+                                        onChange={(e) => setCoupon(e.target.value)}
+                                    />
+                                </div>
+                                <Button onClick={handleCoupon}>Applica</Button>
+                            </div>
+                            {couponMsg && (
+                                <p style={{
+                                    marginTop: "0.625rem", fontSize: "0.825rem", fontWeight: 600,
+                                    color: couponMsg.startsWith("✅") ? "hsl(var(--tf-accent))" : "hsl(var(--tf-danger))"
+                                }}>
+                                    {couponMsg}
+                                </p>
+                            )}
+                        </Card>
+                    </>
+                )}
+
+                {/* Storico pagamenti (mostrato anche se non ha abbonamento ora, ma ne ha in passato) */}
+                {pagamenti.length > 0 && (
+                    <Card title="Storico pagamenti">
+                        <PaymentHistory payments={pagamenti} />
+                        <div style={{ marginTop: "1rem", display: "flex", gap: "0.75rem" }}>
+                            <Button variant="secondary" size="sm">📄 Esporta PDF</Button>
+                            <Button variant="secondary" size="sm">📊 Esporta CSV</Button>
+                        </div>
+                    </Card>
+                )}
             </div>
         </div>
     );

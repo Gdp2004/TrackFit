@@ -34,7 +34,7 @@ const AcquistaSchema = z.object({
 });
 
 const ValidaAccessoSchema = z.object({
-  qrCode: z.string().uuid(),
+  qrcode: z.string().uuid(),
   strutturaid: z.string().uuid(),
 });
 
@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
       const parsed = ValidaAccessoSchema.safeParse(body);
       if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
       const service = buildService();
-      const valido = await service.validaAccesso(parsed.data.qrCode, parsed.data.strutturaid);
+      const valido = await service.validaAccesso(parsed.data.qrcode, parsed.data.strutturaid);
       return NextResponse.json({ valido });
     } catch (err: unknown) {
       return NextResponse.json({ error: String(err) }, { status: 500 });

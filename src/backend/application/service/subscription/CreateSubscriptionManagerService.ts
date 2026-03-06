@@ -64,7 +64,7 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
     // Nota: in produzione si aspetta il webhook Stripe "payment_intent.succeeded"
     // prima di creare l'abbonamento. Qui si persiste in stato IN_ATTESA e si
     // aggiorna a ATTIVO via webhook handler (da implementare in /api/stripe/webhook).
-    const qrCode = crypto.randomUUID();
+    const qrcode = crypto.randomUUID();
     const datainizio = new Date();
     const datafine = new Date();
     datafine.setMonth(datafine.getMonth() + durataMesi);
@@ -85,7 +85,7 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
       userid,
       tipoid,
       stato: StatoAbbonamentoEnum.ATTIVO,
-      qrCode,
+      qrcode,
       datainizio: datainizio.toISOString(),
       datafine: datafine.toISOString(),
       importo,
@@ -139,8 +139,8 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
   }
 
   // ─── R7: Validazione QR Code ai tornelli ─────────────────────────────────────
-  async validaAccesso(qrCode: string, strutturaid: string): Promise<boolean> {
-    const sub = await this.subRepo.findByQrCode(qrCode);
+  async validaAccesso(qrcode: string, strutturaid: string): Promise<boolean> {
+    const sub = await this.subRepo.findByQrCode(qrcode);
     if (!sub) return false;
     if (sub.stato !== StatoAbbonamentoEnum.ATTIVO) return false;
     if (new Date(sub.datafine) < new Date()) return false;

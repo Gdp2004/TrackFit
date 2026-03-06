@@ -38,7 +38,11 @@ export async function GET(req: NextRequest) {
     try {
         const service = buildService();
         const tipi = await service.getTipiAbbonamento(strutturaid);
-        return NextResponse.json(tipi);
+        return NextResponse.json(tipi, {
+            headers: {
+                "Cache-Control": "s-maxage=60, stale-while-revalidate=120"
+            }
+        });
     } catch (err: unknown) {
         return NextResponse.json({ error: String(err) }, { status: 500 });
     }

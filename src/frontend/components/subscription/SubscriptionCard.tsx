@@ -3,6 +3,8 @@
 import { Badge } from "@frontend/components/ui/Badge";
 import type { Abbonamento } from "@backend/domain/model/types";
 import { StatoAbbonamentoEnum } from "@backend/domain/model/enums";
+import QRCode from "react-qr-code";
+import { memo } from "react";
 
 interface SubscriptionCardProps { abbonamento: Abbonamento; }
 
@@ -14,7 +16,7 @@ const STATO_BADGE: Record<string, { color: BadgeColor; label: string }> = {
   CANCELLATO: { color: "gray", label: "Cancellato" },
 };
 
-export function SubscriptionCard({ abbonamento }: SubscriptionCardProps) {
+export const SubscriptionCard = memo(function SubscriptionCard({ abbonamento }: SubscriptionCardProps) {
   const badge = STATO_BADGE[abbonamento.stato] ?? { color: "gray" as BadgeColor, label: abbonamento.stato };
   const now = new Date();
   const inizio = new Date(abbonamento.datainizio);
@@ -70,26 +72,39 @@ export function SubscriptionCard({ abbonamento }: SubscriptionCardProps) {
       </div>
 
       {/* QR code area */}
-      {abbonamento.qrCode && (
+      {abbonamento.qrcode && (
         <div style={{
-          padding: "1rem",
+          padding: "1.5rem",
           borderRadius: "var(--tf-radius-sm)",
-          background: "hsl(var(--tf-surface-2))",
+          background: "#ffffff", // Il QR code necessita di buon contrasto, sfondo bianco
           border: "1px dashed hsl(var(--tf-border))",
           textAlign: "center",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "1rem"
         }}>
-          <p style={{ fontSize: "0.72rem", color: "hsl(var(--tf-text-muted))", marginBottom: "0.5rem" }}>
-            📱 Codice QR accesso struttura
+          <p style={{ fontSize: "0.85rem", fontWeight: 600, color: "#1e293b", marginBottom: "0.5rem" }}>
+            📱 Mostra questo codice all'ingresso
           </p>
-          <div style={{
+          <div style={{ padding: "0.5rem", background: "#fff", borderRadius: "8px" }}>
+            <QRCode
+              value={abbonamento.qrcode}
+              size={180}
+              bgColor="#ffffff"
+              fgColor="#000000"
+              level="H"
+            />
+          </div>
+          <p style={{
             fontFamily: "monospace", fontSize: "0.65rem",
-            wordBreak: "break-all", color: "hsl(var(--tf-text-muted))", lineHeight: 1.4,
+            wordBreak: "break-all", color: "#64748b", lineHeight: 1.4,
             maxWidth: 300, margin: "0 auto",
           }}>
-            {abbonamento.qrCode}
-          </div>
+            {abbonamento.qrcode}
+          </p>
         </div>
       )}
     </div>
   );
-}
+});

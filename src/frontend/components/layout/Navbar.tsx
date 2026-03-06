@@ -196,7 +196,7 @@ export function Navbar() {
                 if (item.type === "link") {
                   return (
                     <Link
-                      key={item.href}
+                      key={item.label}
                       href={item.href}
                       role="menuitem"
                       onClick={() => setOpen(false)}

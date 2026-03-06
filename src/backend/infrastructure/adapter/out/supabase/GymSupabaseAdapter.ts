@@ -27,6 +27,13 @@ export class GymSupabaseAdapter implements GymRepositoryPort {
         return error ? null : data as Struttura;
     }
 
+    async findStruttureByGestoreId(gestoreid: string): Promise<Struttura[]> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.from("strutture").select("*").eq("gestoreid", gestoreid);
+        if (error) return [];
+        return (data ?? []) as Struttura[];
+    }
+
     async updateStruttura(id: string, updateData: Partial<Struttura>): Promise<Struttura> {
         const supabase = createSupabaseServerClient();
         const { data, error } = await supabase.from("strutture").update(updateData).eq("id", id).select().single();
