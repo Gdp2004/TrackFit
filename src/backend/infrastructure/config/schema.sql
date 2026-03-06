@@ -4,37 +4,11 @@
 -- ============================================================
 
 -- 1. ENUMS (PostgreSQL native enums matching TS enums)
-DROP TYPE IF EXISTS ruolo_enum CASCADE;
-DROP TYPE IF EXISTS workout_stato_enum CASCADE;
-DROP TYPE IF EXISTS abbonamento_stato_enum CASCADE;
-DROP TYPE IF EXISTS prenotazione_stato_enum CASCADE;
-DROP TYPE IF EXISTS pagamento_stato_enum CASCADE;
-
-DROP TABLE IF EXISTS "gestori" CASCADE;
-DROP TABLE IF EXISTS "tipi_abbonamento" CASCADE;
-
 CREATE TYPE ruolo_enum AS ENUM ('UTENTE', 'COACH', 'GESTORE', 'ADMIN');
 CREATE TYPE workout_stato_enum AS ENUM ('PIANIFICATA', 'IN_CORSO', 'IN_PAUSA', 'INTERROTTA', 'COMPLETATA_LOCALMENTE', 'IN_ATTESA_DI_RETE', 'IN_SINCRONIZZAZIONE', 'CONSOLIDATA');
 CREATE TYPE abbonamento_stato_enum AS ENUM ('ATTIVO', 'SOSPESO', 'SCADUTO', 'CANCELLATO');
 CREATE TYPE prenotazione_stato_enum AS ENUM ('CONFERMATA', 'CANCELLATA', 'IN_ATTESA');
 CREATE TYPE pagamento_stato_enum AS ENUM ('IN_ATTESA', 'COMPLETATO', 'FALLITO', 'RIMBORSATO');
-
--- Drop existing tables to allow clean recreation
-DROP TABLE IF EXISTS "storico_uso_coupon" CASCADE;
-DROP TABLE IF EXISTS coupon CASCADE;
-DROP TABLE IF EXISTS pagamenti CASCADE;
-DROP TABLE IF EXISTS abbonamenti CASCADE;
-DROP TABLE IF EXISTS tipi_abbonamento CASCADE;
-DROP TABLE IF EXISTS workouts CASCADE;
-DROP TABLE IF EXISTS prenotazioni CASCADE;
-DROP TABLE IF EXISTS lista_attesa CASCADE;
-DROP TABLE IF EXISTS corsi CASCADE;
-DROP TABLE IF EXISTS strutture CASCADE;
-DROP TABLE IF EXISTS gestori CASCADE;
-DROP TABLE IF EXISTS coaches CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS audit_log CASCADE;
-DROP TABLE IF EXISTS reports CASCADE;
 
 -- 2. TABLES
 
