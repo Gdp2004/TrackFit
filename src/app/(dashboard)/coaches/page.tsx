@@ -71,7 +71,8 @@ export default function CoachesPage() {
                             coach={{
                                 ...c.user,
                                 specializzazione: c.specializzazione,
-                                rating: c.rating
+                                rating: c.rating,
+                                coachid: c.id
                             }}
                         />
                     ))}

@@ -4,7 +4,10 @@ import Link from "next/link";
 import { Badge } from "@frontend/components/ui/Badge";
 import type { Workout } from "@backend/domain/model/types";
 
-interface WorkoutCardProps { workout: Workout; }
+interface WorkoutCardProps {
+  workout: Workout;
+  onClick?: (w: Workout) => void;
+}
 
 const SPORT_ICON: Record<string, string> = {
   CORSA: "🏃", CICLISMO: "🚴", NUOTO: "🏊", PALESTRA: "🏋️", YOGA: "🧘", CAMMINO: "🚶", ALTRO: "⚡",
@@ -21,53 +24,69 @@ const STATO_BADGE: Record<string, { color: BadgeColor; label: string }> = {
   CONSOLIDATA: { color: "green", label: "Consolidata" },
 };
 
-export function WorkoutCard({ workout }: WorkoutCardProps) {
+export function WorkoutCard({ workout, onClick }: WorkoutCardProps) {
   const badge = STATO_BADGE[workout.stato] ?? { color: "gray" as BadgeColor, label: workout.stato };
   const icon = SPORT_ICON[workout.tipo] ?? "⚡";
 
+  const isCourseBooking = workout.sorgente === "IMPORT" && workout.obiettivo === "Prenotazione";
+
+  const CardContent = (
+    <div
+      className="tf-card"
+      style={{
+        display: "flex", alignItems: "center", gap: "1rem",
+        padding: "1rem 1.25rem",
+        cursor: "pointer",
+      }}
+      onClick={(e) => {
+        if (onClick) {
+          e.preventDefault();
+          onClick(workout);
+        }
+      }}
+    >
+      {/* Sport icon */}
+      <div style={{
+        width: 44, height: 44, borderRadius: 12, flexShrink: 0,
+        background: "hsl(var(--tf-surface-2))",
+        display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem",
+      }}>
+        {icon}
+      </div>
+
+      {/* Info */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "hsl(var(--tf-text))" }}>
+          {workout.tipo.startsWith("📍") ? workout.tipo : workout.tipo.charAt(0) + workout.tipo.slice(1).toLowerCase()}
+          {workout.athleteName && (
+            <span style={{ fontWeight: 400, color: "hsl(var(--tf-text-muted))", marginLeft: "0.4rem" }}>
+              · {workout.athleteName}
+            </span>
+          )}
+        </p>
+        <p style={{ fontSize: "0.78rem", color: "hsl(var(--tf-text-muted))", marginTop: 2 }}>
+          {new Date(workout.dataora).toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+        </p>
+      </div>
+
+      {/* Metrics */}
+      <div style={{ display: "flex", gap: "1rem", textAlign: "right", flexShrink: 0 }}>
+        <div>
+          <p style={{ fontWeight: 700, fontSize: "1rem", color: "hsl(var(--tf-text))" }}>{workout.durata}<span style={{ fontSize: "0.7rem", fontWeight: 400, marginLeft: 2 }}>min</span></p>
+          {workout.distanza && <p style={{ fontSize: "0.72rem", color: "hsl(var(--tf-text-muted))" }}>{workout.distanza.toFixed(1)} km</p>}
+        </div>
+        <Badge color={badge.color}>{badge.label}</Badge>
+      </div>
+    </div>
+  );
+
+  if (onClick) return CardContent;
+
+  if (isCourseBooking) return CardContent;
+
   return (
     <Link href={`/workouts/${workout.id}`} style={{ textDecoration: "none" }}>
-      <div
-        className="tf-card"
-        style={{
-          display: "flex", alignItems: "center", gap: "1rem",
-          padding: "1rem 1.25rem",
-          cursor: "pointer",
-        }}
-      >
-        {/* Sport icon */}
-        <div style={{
-          width: 44, height: 44, borderRadius: 12, flexShrink: 0,
-          background: "hsl(var(--tf-surface-2))",
-          display: "flex", alignItems: "center", justifyContent: "center", fontSize: "1.3rem",
-        }}>
-          {icon}
-        </div>
-
-        {/* Info */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontWeight: 700, fontSize: "0.95rem", color: "hsl(var(--tf-text))" }}>
-            {workout.tipo.charAt(0) + workout.tipo.slice(1).toLowerCase()}
-            {workout.athleteName && (
-              <span style={{ fontWeight: 400, color: "hsl(var(--tf-text-muted))", marginLeft: "0.4rem" }}>
-                · {workout.athleteName}
-              </span>
-            )}
-          </p>
-          <p style={{ fontSize: "0.78rem", color: "hsl(var(--tf-text-muted))", marginTop: 2 }}>
-            {new Date(workout.dataora).toLocaleString("it-IT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-          </p>
-        </div>
-
-        {/* Metrics */}
-        <div style={{ display: "flex", gap: "1rem", textAlign: "right", flexShrink: 0 }}>
-          <div>
-            <p style={{ fontWeight: 700, fontSize: "1rem", color: "hsl(var(--tf-text))" }}>{workout.durata}<span style={{ fontSize: "0.7rem", fontWeight: 400, marginLeft: 2 }}>min</span></p>
-            {workout.distanza && <p style={{ fontSize: "0.72rem", color: "hsl(var(--tf-text-muted))" }}>{workout.distanza.toFixed(1)} km</p>}
-          </div>
-          <Badge color={badge.color}>{badge.label}</Badge>
-        </div>
-      </div>
+      {CardContent}
     </Link>
   );
 }

@@ -71,6 +71,7 @@ export default function ProfilePage() {
                     altezza: form.altezza ? Number(form.altezza) : undefined,
                     eta: form.eta ? Number(form.eta) : undefined,
                     obiettivo: form.obiettivo,
+                    datanascita: form.dataNascita || undefined,
                 }),
             });
             const data = await res.json();

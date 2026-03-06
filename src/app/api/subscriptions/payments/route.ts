@@ -21,13 +21,13 @@ export async function GET(req: NextRequest) {
                 id,
                 importo,
                 stato,
-                metodopagamento,
+                metodo,
                 createdat,
                 abbonamento:abbonamentoid (
                     id,
                     datainizio,
                     datafine,
-                    tipo:tipoabbonamentoid (nome, duratamesi)
+                    tipo:tipoid (nome, duratamesi)
                 )
             `)
             .eq("userid", userid)

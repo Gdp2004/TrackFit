@@ -158,6 +158,20 @@ CREATE TABLE pagamenti (
     createdat TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Recensioni (Review Sidebar)
+CREATE TABLE recensioni (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    userid UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    coachid UUID REFERENCES coaches(id) ON DELETE CASCADE,
+    strutturaid UUID REFERENCES strutture(id) ON DELETE CASCADE,
+    voto INT NOT NULL CHECK (voto >= 1 AND voto <= 5),
+    commento TEXT,
+    createdat TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    risposta TEXT,
+    rispostadat TIMESTAMP WITH TIME ZONE,
+    CHECK (coachid IS NOT NULL OR strutturaid IS NOT NULL)
+);
+
 -- Coupon (R4)
 CREATE TABLE coupon (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -216,6 +230,7 @@ ALTER TABLE corsi ENABLE ROW LEVEL SECURITY;
 ALTER TABLE tipi_abbonamento ENABLE ROW LEVEL SECURITY;
 ALTER TABLE prenotazioni ENABLE ROW LEVEL SECURITY;
 ALTER TABLE abbonamenti ENABLE ROW LEVEL SECURITY;
+ALTER TABLE recensioni ENABLE ROW LEVEL SECURITY;
 
 -- Users can read/update their own profile
 CREATE POLICY "Users can view own profile" ON users FOR SELECT USING (auth.uid() = id);
@@ -255,6 +270,10 @@ CREATE POLICY "Prenotazioni service write" ON prenotazioni FOR ALL USING (auth.r
 -- Abbonamenti: utente vede i propri
 CREATE POLICY "Abbonamenti own read" ON abbonamenti FOR SELECT USING (auth.uid() = userid OR auth.role() = 'service_role');
 CREATE POLICY "Abbonamenti service write" ON abbonamenti FOR ALL USING (auth.role() = 'service_role');
+
+-- Recensioni: tutti leggono, utenti inseriscono le proprie
+CREATE POLICY "Recensioni public read" ON recensioni FOR SELECT USING (true);
+CREATE POLICY "Recensioni users insert" ON recensioni FOR INSERT WITH CHECK (auth.uid() = userid);
 
 -- ============================================================
 -- 4. Funzioni RPC ed Estensioni (Ottimizzazione & Concorrenza)
@@ -338,11 +357,14 @@ DECLARE
     v_sessioni_mese INT;
     v_rating_medio DECIMAL;
 BEGIN
-    -- Conta atleti unici con prenotazioni CONFERMATE
-    SELECT COUNT(DISTINCT userid)
+    -- Conta atleti UNICI (sia assegnati via profilo che via prenotazioni attive)
+    SELECT COUNT(DISTINCT id)
     INTO v_atleti_seguiti
-    FROM prenotazioni
-    WHERE coachid = p_coach_id AND stato = 'CONFERMATA';
+    FROM (
+        SELECT id FROM users WHERE coachid = p_coach_id
+        UNION
+        SELECT userid FROM prenotazioni WHERE coachid = p_coach_id AND stato != 'CANCELLATA'
+    ) as combined_atleti;
 
     -- Sessioni previste oggi
     SELECT COUNT(*)

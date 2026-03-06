@@ -48,7 +48,7 @@ export class CoachSupabaseAdapter implements CoachRepositoryPort {
         const supabase = createSupabaseServerClient();
         const { data, error } = await supabase
             .from("coaches")
-            .select("*, user:users!inner(*)")
+            .select("*, user:users!userid(*)")
             .order("rating", { ascending: false });
 
         if (error) {
@@ -69,6 +69,7 @@ export class CoachSupabaseAdapter implements CoachRepositoryPort {
         const supabase = createSupabaseServerClient();
         const { data, error } = await supabase.rpc("get_coach_stats", { p_coach_id: coachid });
         if (error || !data) {
+            console.error("[getStats] Errore RPC get_coach_stats:", error);
             return { atleti_seguiti: 0, sessioni_oggi: 0, sessioni_mese: 0, rating_medio: 0 };
         }
         return data as CoachStats;

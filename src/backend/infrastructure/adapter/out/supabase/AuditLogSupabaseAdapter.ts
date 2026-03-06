@@ -11,17 +11,30 @@ import { createSupabaseServerClient } from "@/backend/infrastructure/config/supa
 export class AuditLogSupabaseAdapter implements AuditLogRepositoryPort {
     async registra(log: Omit<AuditLogOperazione, "id">): Promise<AuditLogOperazione> {
         const supabase = createSupabaseServerClient();
+
+        // Estrai un risorsaid valido dal payload, o usa l'id utente come fallback
+        const risorsaid = log.datiJSON?.abbonamentoid || log.datiJSON?.couponid || log.datiJSON?.strutturaid || log.utenteId;
+
+        const dbPayload = {
+            operazione: log.azione,
+            attoreid: log.utenteId,
+            risorsaid: risorsaid,
+            dettagli: log.datiJSON,
+            timestamp: log.timestamp || new Date().toISOString()
+        };
+
         const { data, error } = await supabase
             .from("audit_log")
-            .insert(log)
+            .insert(dbPayload)
             .select()
             .single();
+
         if (error) {
             // Il fallimento del log non deve bloccare l'operazione principale
             console.error(`[AuditLog] Errore registrazione: ${error.message}`, log);
             return { id: "error", ...log };
         }
-        return data as AuditLogOperazione;
+        return this.mapToDomain(data);
     }
 
     async findByUtenteId(utenteId: string): Promise<AuditLogOperazione[]> {
@@ -29,10 +42,10 @@ export class AuditLogSupabaseAdapter implements AuditLogRepositoryPort {
         const { data, error } = await supabase
             .from("audit_log")
             .select("*")
-            .eq("utenteId", utenteId)
+            .eq("attoreid", utenteId)
             .order("timestamp", { ascending: false });
         if (error) return [];
-        return (data ?? []) as AuditLogOperazione[];
+        return (data ?? []).map(this.mapToDomain);
     }
 
     async findRecenti(limit = 50): Promise<AuditLogOperazione[]> {
@@ -43,6 +56,16 @@ export class AuditLogSupabaseAdapter implements AuditLogRepositoryPort {
             .order("timestamp", { ascending: false })
             .limit(limit);
         if (error) return [];
-        return (data ?? []) as AuditLogOperazione[];
+        return (data ?? []).map(this.mapToDomain);
+    }
+
+    private mapToDomain(row: any): AuditLogOperazione {
+        return {
+            id: row.id,
+            utenteId: row.attoreid,
+            azione: row.operazione,
+            datiJSON: row.dettagli,
+            timestamp: row.timestamp
+        };
     }
 }

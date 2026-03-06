@@ -107,4 +107,13 @@ export class CreateWorkoutManagerService implements WorkoutManagementPort {
     async getSessioniCoach(coachid: string): Promise<Workout[]> {
         return this.workoutRepo.findByCoachId(coachid);
     }
+
+    async aggiornaDataOra(id: string, nuovaData: Date): Promise<Workout> {
+        if (nuovaData <= new Date()) throw new Error("La nuova data deve essere nel futuro.");
+        return this.workoutRepo.update(id, { dataora: nuovaData.toISOString() });
+    }
+
+    async eliminaSessione(id: string): Promise<void> {
+        return this.workoutRepo.delete(id);
+    }
 }

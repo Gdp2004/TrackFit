@@ -12,7 +12,7 @@ const ROLE_DASHBOARD: Record<RuoloEnum, string> = {
   [RuoloEnum.COACH]: "/coach/dashboard",
   [RuoloEnum.GESTORE]: "/gym/dashboard",
   [RuoloEnum.UTENTE]: "/dashboard",
-  [RuoloEnum.ADMIN]: "/dashboard",
+  [RuoloEnum.ADMIN]: "/admin/users",
 };
 
 /** Voci comuni a tutti i ruoli */
@@ -30,10 +30,10 @@ const NAV_BY_ROLE: Record<RuoloEnum, NavItem[]> = {
     { href: "/reports", label: "Report", icon: "📊" },
   ],
   [RuoloEnum.COACH]: [
-    { href: "/workouts", label: "Sessioni", icon: "🏃" },
     { href: "/coaches/atleti", label: "Miei Atleti", icon: "👥" },
     { href: "/coaches/disponibilita", label: "Disponibilità", icon: "🗓️" },
     { href: "/coaches/piani", label: "Piani", icon: "📋" },
+    { href: "/coaches/recensioni", label: "Recensioni", icon: "⭐️" },
   ],
   [RuoloEnum.GESTORE]: [
     { href: "/gyms/struttura", label: "Struttura", icon: "🏋️" },
@@ -44,11 +44,9 @@ const NAV_BY_ROLE: Record<RuoloEnum, NavItem[]> = {
   ],
   [RuoloEnum.ADMIN]: [
     { href: "/admin/users", label: "Gestione Utenti", icon: "⚙️" },
-    { href: "/workouts", label: "Allenamenti", icon: "🏃" },
-    { href: "/coaches", label: "Coach", icon: "🎯" },
-    { href: "/gyms", label: "Palestre", icon: "🏋️" },
-    { href: "/subscription", label: "Abbonamenti", icon: "🎫" },
-    { href: "/reports", label: "Report", icon: "📊" },
+    { href: "/admin/workouts", label: "Allenamenti", icon: "🏃" },
+    { href: "/admin/gyms", label: "Palestre", icon: "🏋️" },
+    { href: "/admin/abbonamenti", label: "Abbonamenti", icon: "🎫" },
   ],
 };
 
@@ -61,7 +59,7 @@ export function Sidebar() {
   const roleItems = ruolo ? NAV_BY_ROLE[ruolo] : NAV_BY_ROLE[RuoloEnum.UTENTE];
 
   const allItems: NavItem[] = [
-    { href: dashboardHref, label: "Dashboard", icon: "💻" },
+    ...(ruolo === RuoloEnum.ADMIN ? [] : [{ href: dashboardHref, label: "Dashboard", icon: "💻" }]),
     ...roleItems,
     ...NAV_COMMON,
   ];

@@ -28,9 +28,10 @@ const PianificaSchema = z.object({
 
 const TerminaSchema = z.object({
     workoutId: z.string().uuid(),
-    action: z.enum(["termina", "sincronizza"]),
+    action: z.enum(["termina", "sincronizza", "update_time"]),
     percezione: z.number().int().min(1).max(10).optional(),  // RPE 1-10
     note: z.string().optional(),
+    dataora: z.string().datetime().optional(),               // Required for update_time
 });
 
 // ─── POST /api/workouts ── pianifica sessione (UC3) ──────────────────────────
@@ -82,7 +83,7 @@ export async function GET(req: NextRequest) {
     }
 }
 
-// ─── PUT /api/workouts ── termina/sincronizza sessione ────────────────────────
+// ─── PUT /api/workouts ── termina/sincronizza/aggiorna sessione ───────────────
 export async function PUT(req: NextRequest) {
     try {
         const body = await req.json();
@@ -92,18 +93,39 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
         }
 
-        const { workoutId, action, percezione, note } = parsed.data;
+        const { workoutId, action, percezione, note, dataora } = parsed.data;
         const service = buildService();
 
         if (action === "termina") {
             // UC4 – Termina sessione e salva percezione/note
             const workout = await service.terminaSessione(workoutId, percezione, note);
             return NextResponse.json(workout);
-        } else {
+        } else if (action === "sincronizza") {
             // UC5 – Sincronizza sessione salvata in locale verso Supabase
             await service.sincronizzaSessione(workoutId);
             return NextResponse.json({ message: "Sessione sincronizzata con il server." });
+        } else if (action === "update_time") {
+            if (!dataora) return NextResponse.json({ error: "dataora mancante" }, { status: 400 });
+            const workout = await service.aggiornaDataOra(workoutId, new Date(dataora));
+            return NextResponse.json(workout);
         }
+        return NextResponse.json({ error: "Azione non supportata" }, { status: 400 });
+    } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "Errore interno";
+        return NextResponse.json({ error: message }, { status: 500 });
+    }
+}
+
+// ─── DELETE /api/workouts ── elimina sessione ─────────────────────────────────
+export async function DELETE(req: NextRequest) {
+    try {
+        const { workoutId } = await req.json();
+        if (!workoutId) return NextResponse.json({ error: "workoutId obbligatorio" }, { status: 400 });
+
+        const service = buildService();
+        await service.eliminaSessione(workoutId);
+
+        return NextResponse.json({ message: "Sessione eliminata" });
     } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "Errore interno";
         return NextResponse.json({ error: message }, { status: 500 });

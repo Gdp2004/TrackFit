@@ -9,7 +9,7 @@ import { Input } from "@frontend/components/ui/Input";
 import type { User } from "@backend/domain/model/types";
 
 interface BookingModalProps {
-    coach: User;
+    coach: User & { coachid?: string; specializzazione?: string; rating?: number };
     open: boolean;
     onClose: () => void;
 }
@@ -25,10 +25,11 @@ export function BookingModal({ coach, open, onClose }: BookingModalProps) {
         if (!user || !dataora) { setError("Seleziona data e ora"); return; }
         setLoading(true); setError(null);
         try {
+            const actualCoachId = coach.coachid || coach.id;
             const res = await fetch("/api/coaches", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ userid: user.id, coachid: coach.id, dataora: new Date(dataora).toISOString() }),
+                body: JSON.stringify({ userid: user.id, coachid: actualCoachId, dataora: new Date(dataora).toISOString() }),
             });
             if (!res.ok) { const d = await res.json(); setError(d.error ?? "Errore"); setLoading(false); return; }
             setSuccess(true);

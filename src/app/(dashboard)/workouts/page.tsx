@@ -6,6 +6,7 @@ import { useAuth } from "@frontend/contexts/AuthContext";
 import { Button } from "@frontend/components/ui/Button";
 import { Badge } from "@frontend/components/ui/Badge";
 import { WorkoutCard } from "@frontend/components/workout/WorkoutCard";
+import { QuickActionModal } from "@frontend/components/workout/QuickActionModal";
 import type { Workout } from "@backend/domain/model/types";
 import { WorkoutStatoEnum, TipoWorkoutEnum } from "@backend/domain/model/enums";
 
@@ -24,11 +25,13 @@ export default function WorkoutsPage() {
     const { user, ruolo } = useAuth();
     const [workouts, setWorkouts] = useState<Workout[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
     const [filterStato, setFilterStato] = useState<FilterStato>("TUTTI");
     const [filterTipo, setFilterTipo] = useState<FilterTipo>("TUTTI");
 
-    useEffect(() => {
+    const fetchWorkouts = () => {
         if (!user || !ruolo) return;
+        setLoading(true);
         const endpoint = ruolo === "COACH"
             ? `/api/workouts?coachid=${user.id}`
             : `/api/workouts?userid=${user.id}`;
@@ -38,6 +41,10 @@ export default function WorkoutsPage() {
             .then((d: Workout[]) => setWorkouts(Array.isArray(d) && d.length > 0 ? d : MOCK))
             .catch(() => setWorkouts(MOCK))
             .finally(() => setLoading(false));
+    };
+
+    useEffect(() => {
+        fetchWorkouts();
     }, [user, ruolo]);
 
 
@@ -115,8 +122,22 @@ export default function WorkoutsPage() {
                 </div>
             ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                    {filtered.map((w) => <WorkoutCard key={w.id} workout={w} />)}
+                    {filtered.map((w) => (
+                        <WorkoutCard
+                            key={w.id}
+                            workout={w}
+                            onClick={(item) => setSelectedWorkout(item)}
+                        />
+                    ))}
                 </div>
+            )}
+
+            {selectedWorkout && (
+                <QuickActionModal
+                    workout={selectedWorkout}
+                    onClose={() => setSelectedWorkout(null)}
+                    onRefresh={() => fetchWorkouts()}
+                />
             )}
         </div>
     );

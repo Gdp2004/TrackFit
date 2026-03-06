@@ -11,7 +11,7 @@ const ROLE_DASHBOARD: Record<RuoloEnum, string> = {
   [RuoloEnum.COACH]: "/coach/dashboard",
   [RuoloEnum.GESTORE]: "/gym/dashboard",
   [RuoloEnum.UTENTE]: "/dashboard",
-  [RuoloEnum.ADMIN]: "/dashboard",
+  [RuoloEnum.ADMIN]: "/admin/users",
 };
 
 type DropdownItem =
@@ -55,9 +55,8 @@ export function Navbar() {
 
   // Voci menu in base al ruolo
   const menuItems: DropdownItem[] = [
-    { type: "link", href: dashboardHref, icon: "💻", label: "Dashboard" },
+    ...(ruolo === RuoloEnum.ADMIN ? [] : [{ type: "link" as const, href: dashboardHref, icon: "💻", label: "Dashboard" }]),
     { type: "link", href: "/profile", icon: "👤", label: "Il mio profilo" },
-    { type: "link", href: "/profile", icon: "⚙️", label: "Impostazioni account" },
     ...(ruolo === RuoloEnum.UTENTE
       ? [
         { type: "link" as const, href: "/subscription", icon: "💳", label: "Abbonamento" },

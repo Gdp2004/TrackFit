@@ -72,6 +72,31 @@ function SubscriptionContent() {
         setTimeout(() => setCouponMsg(null), 4000);
     };
 
+    const handleCancel = async (id: string) => {
+        if (!window.confirm("Sei sicuro di voler cancellare definitivamente il tuo abbonamento? Questa azione non può essere annullata.")) {
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/subscriptions", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ abbonamentoid: id })
+            });
+
+            if (res.ok) {
+                alert("Abbonamento cancellato con successo.");
+                fetchSubscriptionData(); // ricarica i dati
+            } else {
+                const data = await res.json();
+                alert(`Errore: ${data.error ?? "Impossibile cancellare l'abbonamento"}`);
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Errore di rete durante la cancellazione.");
+        }
+    };
+
     return (
         <div style={{ maxWidth: 800, margin: "0 auto" }} className="animate-fadeIn">
             <div style={{ marginBottom: "1.5rem" }}>
@@ -109,7 +134,7 @@ function SubscriptionContent() {
                 ) : (
                     <>
                         {/* Abbonamento attivo */}
-                        <SubscriptionCard abbonamento={abbonamento} />
+                        <SubscriptionCard abbonamento={abbonamento} onCancel={handleCancel} />
 
                         {/* Coupon (visibile solo se hai un abbonamento, o forse per applicarlo al prossimo rinnovo) */}
                         <Card title="Applica coupon al rinnovo">

@@ -29,9 +29,10 @@ export class SubscriptionSupabaseAdapter implements SubscriptionRepositoryPort {
             .select("*")
             .eq("userid", userid)
             .eq("stato", StatoAbbonamentoEnum.ATTIVO)
-            .single();
-        if (error) return null;
-        return data as Abbonamento;
+            .order("datafine", { ascending: false })
+            .limit(1);
+        if (error || !data || data.length === 0) return null;
+        return data[0] as Abbonamento;
     }
 
     async findByQrCode(qrcode: string): Promise<Abbonamento | null> {
@@ -51,5 +52,12 @@ export class SubscriptionSupabaseAdapter implements SubscriptionRepositoryPort {
     async existsActiveByUserId(userid: string): Promise<boolean> {
         const sub = await this.findByUserIdActive(userid);
         return sub !== null;
+    }
+
+    async findTipoById(id: string): Promise<any | null> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.from("tipi_abbonamento").select("*").eq("id", id).single();
+        if (error) return null;
+        return data;
     }
 }

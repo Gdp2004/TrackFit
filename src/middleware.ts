@@ -42,6 +42,8 @@ const ROUTE_ROLES: Record<string, string[]> = {
     "/api/subscriptions": ["UTENTE", "GESTORE", "ADMIN"],
     // Workouts
     "/api/workouts": ["UTENTE", "COACH", "ADMIN"],
+    // Reviews
+    "/api/reviews": ["UTENTE", "COACH", "GESTORE", "ADMIN"],
 };
 
 // Route pubbliche che non richiedono autenticazione

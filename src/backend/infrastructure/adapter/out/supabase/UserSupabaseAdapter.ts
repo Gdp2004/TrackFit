@@ -61,12 +61,38 @@ export class UserSupabaseAdapter implements UserRepositoryPort {
 
     async findByCoachId(coachid: string): Promise<User[]> {
         const supabase = createSupabaseServerClient();
-        const { data, error } = await supabase
+
+        // 1. Atleti assegnati direttamente nel profilo user
+        const { data: assigned, error: err1 } = await supabase
             .from("users")
             .select("*")
             .eq("coachid", coachid);
-        if (error) return [];
-        return (data ?? []) as User[];
+
+        // 2. Atleti che hanno prenotato sessioni con questo coach
+        const { data: bookings, error: err2 } = await supabase
+            .from("prenotazioni")
+            .select("userid")
+            .eq("coachid", coachid);
+
+        if (err1 && err2) return [];
+
+        const userIdsFromBookings = Array.from(new Set((bookings ?? []).map(b => b.userid)));
+
+        // Se non ci sono prenotazioni, restituiamo solo gli assegnati
+        if (userIdsFromBookings.length === 0) return (assigned ?? []) as User[];
+
+        // Recuperiamo i profili degli utenti che hanno prenotato ma non sono necessariamente "assegnati"
+        const { data: bookedUsers, error: err3 } = await supabase
+            .from("users")
+            .select("*")
+            .in("id", userIdsFromBookings);
+
+        // Uniamo le liste ed eliminiamo i duplicati
+        const allUsersMap = new Map<string, User>();
+        (assigned ?? []).forEach(u => allUsersMap.set(u.id, u as User));
+        (bookedUsers ?? []).forEach(u => allUsersMap.set(u.id, u as User));
+
+        return Array.from(allUsersMap.values());
     }
 
     async countAll(): Promise<number> {

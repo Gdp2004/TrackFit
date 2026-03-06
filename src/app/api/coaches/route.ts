@@ -18,8 +18,14 @@ export async function POST(req: NextRequest) {
     if (new Date(parsed.data.dataora) <= new Date()) {
       return NextResponse.json({ error: "dataora deve essere futura" }, { status: 400 });
     }
-    // TODO: inject CreateCoachManagerService
-    return NextResponse.json({ message: "Prenotazione coach in lavorazione" }, { status: 202 });
+    const service = getCoachService();
+    const result = await service.prenotaSlotCoach(
+      parsed.data.userid,
+      parsed.data.coachid,
+      new Date(parsed.data.dataora)
+    );
+
+    return NextResponse.json(result, { status: 201 });
   } catch (err: unknown) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

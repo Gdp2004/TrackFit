@@ -177,6 +177,12 @@ export class CreateGymManagerService implements GymManagementPort {
       throw new Error("FR8: Abbonamento non attivo. Acquista un abbonamento per prenotare corsi.");
     }
 
+    // Verifica se l'utente è già prenotato
+    const esistente = await this.gymRepo.findPrenotazioneByUtenteAndCorso(userid, corsoid);
+    if (esistente) {
+      throw new Error("Hai già una prenotazione attiva (o in lista d'attesa) per questo corso.");
+    }
+
     // FR8/FR25: Verifica capacità in modo ATOMICO
     const spazioneRiservato = await this.gymRepo.incrementaPostiOccupati(corsoid);
     if (!spazioneRiservato) {

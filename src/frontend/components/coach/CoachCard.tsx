@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Badge } from "@frontend/components/ui/Badge";
 import { Button } from "@frontend/components/ui/Button";
 import { BookingModal } from "./BookingModal";
+import { ReviewSidebar } from "../shared/ReviewSidebar";
 import type { User } from "@backend/domain/model/types";
 
 interface CoachCardProps { coach: User & { specializzazione?: string; rating?: number }; }
@@ -28,6 +29,7 @@ const BG_COLORS = [
 
 export function CoachCard({ coach }: CoachCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const idx = coach.id.charCodeAt(0) % BG_COLORS.length;
   const initials = `${coach.nome[0]}${coach.cognome[0]}`.toUpperCase();
 
@@ -60,12 +62,23 @@ export function CoachCard({ coach }: CoachCardProps) {
           <StarRating rating={coach.rating} />
         </div>
 
-        <Button onClick={() => setModalOpen(true)} style={{ width: "100%" }}>
-          🗓️ Prenota slot
-        </Button>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <Button onClick={() => setModalOpen(true)} style={{ flex: 1 }}>
+            🗓️ Prenota
+          </Button>
+          <Button variant="secondary" onClick={() => setReviewOpen(true)} style={{ flex: 1 }}>
+            ⭐ Recensisci
+          </Button>
+        </div>
       </div>
 
       <BookingModal coach={coach} open={modalOpen} onClose={() => setModalOpen(false)} />
+      <ReviewSidebar
+        coachId={coach.coachid || coach.id}
+        name={`${coach.nome} ${coach.cognome}`}
+        isOpen={reviewOpen}
+        onClose={() => setReviewOpen(false)}
+      />
     </>
   );
 }

@@ -86,6 +86,32 @@ export default function AbbonamentiPage() {
         init();
     }, []);
 
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    const handleDelete = async (id: string, utenteNome: string) => {
+        if (!strutturaid) return;
+        if (!window.confirm(`Sei sicuro di voler eliminare l'abbonamento di ${utenteNome}?`)) return;
+
+        setDeletingId(id);
+        try {
+            const res = await fetch(`/api/gyms/${strutturaid}/abbonamenti?abbonamentoid=${id}`, {
+                method: "DELETE",
+            });
+
+            if (res.ok) {
+                setRows(prev => prev.filter(r => r.id !== id));
+            } else {
+                const data = await res.json();
+                alert(data.error || "Errore durante l'eliminazione");
+            }
+        } catch (error) {
+            console.error(error);
+            alert("Errore di rete");
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
     if (loading || loadingData) return (
         <div style={{ textAlign: "center", padding: "4rem" }}>
             <div style={{ fontSize: "2rem" }}>⏳</div><p>Caricamento...</p>
@@ -174,8 +200,8 @@ export default function AbbonamentiPage() {
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
                         <thead>
                             <tr style={{ background: "hsl(var(--tf-surface))", borderBottom: "1px solid hsl(var(--tf-border))" }}>
-                                {["Utente", "Piano", "Inizio", "Scadenza", "Rinnovo", "Stato", "Prezzo"].map(h => (
-                                    <th key={h} style={{ padding: "0.75rem 1rem", textAlign: "left", fontWeight: 700, fontSize: "0.8rem", color: "hsl(var(--tf-text-muted))", whiteSpace: "nowrap" }}>{h}</th>
+                                {["Utente", "Piano", "Inizio", "Scadenza", "Rinnovo", "Stato", "Prezzo", ""].map((h, i) => (
+                                    <th key={i} style={{ padding: "0.75rem 1rem", textAlign: h === "" ? "right" : "left", fontWeight: 700, fontSize: "0.8rem", color: "hsl(var(--tf-text-muted))", whiteSpace: "nowrap" }}>{h}</th>
                                 ))}
                             </tr>
                         </thead>
@@ -201,6 +227,21 @@ export default function AbbonamentiPage() {
                                         }}>{r.stato}</span>
                                     </td>
                                     <td style={{ padding: "0.75rem 1rem", fontWeight: 700 }}>€ {r.prezzo.toFixed(2)}</td>
+                                    <td style={{ padding: "0.75rem 1rem", textAlign: "right" }}>
+                                        <button
+                                            onClick={() => handleDelete(r.id, r.utente)}
+                                            style={{
+                                                background: "transparent", border: "none", cursor: "pointer",
+                                                color: "hsl(var(--tf-danger))", padding: "0.4rem",
+                                                borderRadius: "var(--tf-radius-sm)", transition: "background 0.15s",
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.background = "hsl(var(--tf-danger)/.1)"}
+                                            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                                            title="Elimina abbonamento"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -209,7 +250,7 @@ export default function AbbonamentiPage() {
                                 <td colSpan={6} style={{ padding: "0.75rem 1rem", fontWeight: 700, color: "hsl(var(--tf-text-muted))", fontSize: "0.8rem" }}>
                                     Totale ({filtered.length} abbonamenti)
                                 </td>
-                                <td style={{ padding: "0.75rem 1rem", fontWeight: 800, color: "hsl(var(--tf-primary))" }}>
+                                <td colSpan={2} style={{ padding: "0.75rem 1rem", fontWeight: 800, color: "hsl(var(--tf-primary))", textAlign: "right" }}>
                                     € {totale.toFixed(2)}
                                 </td>
                             </tr>

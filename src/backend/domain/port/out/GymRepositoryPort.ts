@@ -30,6 +30,7 @@ export interface GymRepositoryPort {
 
     addToListaAttesa(corsoid: string, userid: string): Promise<ListaAttesa>;
     popFromListaAttesa(corsoid: string): Promise<ListaAttesa | null>;
+    findPrenotazioneByUtenteAndCorso(userid: string, corsoid: string): Promise<Prenotazione | null>;
 
     saveTipoAbbonamento(tipo: Partial<TipoAbbonamento>): Promise<TipoAbbonamento>;
     findTipiAbbonamentoByStrutturaId(strutturaid: string): Promise<TipoAbbonamento[]>;

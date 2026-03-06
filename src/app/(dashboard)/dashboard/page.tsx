@@ -107,26 +107,7 @@ export default function DashboardPage() {
 
         {/* Right column */}
         <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-          {/* Quick actions */}
-          <Card title="Azioni rapide">
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              <Link href="/workouts/new">
-                <Button style={{ width: "100%", justifyContent: "flex-start", gap: "0.75rem" }}>
-                  🏃 Nuova sessione
-                </Button>
-              </Link>
-              <Link href="/reports">
-                <Button variant="secondary" style={{ width: "100%", justifyContent: "flex-start", gap: "0.75rem" }}>
-                  📊 Vedi report
-                </Button>
-              </Link>
-              <Link href="/coaches">
-                <Button variant="secondary" style={{ width: "100%", justifyContent: "flex-start", gap: "0.75rem" }}>
-                  🎯 Prenota coach
-                </Button>
-              </Link>
-            </div>
-          </Card>
+
 
           {/* Upcoming */}
           {upcoming.length > 0 && (

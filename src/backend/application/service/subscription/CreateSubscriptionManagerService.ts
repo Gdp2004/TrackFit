@@ -26,10 +26,11 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
 
   // ─── FR20: Acquisto abbonamento con pagamento reale ──────────────────────────
   async acquistaAbbonamento(userid: string, tipoid: string, couponCode?: string): Promise<Abbonamento> {
-    // TODO (quando TipoAbbonamento sarà su DB): carica prezzo e durata dalla tabella
-    // Per ora usa valori di default che verranno sostituiti dalla configurazione del Gestore
-    let importo = 50.0;
-    let durataMesi = 1;
+    const tipo = await this.subRepo.findTipoById(tipoid);
+    if (!tipo) throw new Error("Tipo di abbonamento non valido o inesistente.");
+
+    let importo = tipo.prezzo;
+    let durataMesi = tipo.duratamesi;
 
     // R4: Validazione coupon
     if (couponCode) {

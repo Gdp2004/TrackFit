@@ -169,6 +169,27 @@ export class CreateCoachManagerService implements CoachManagementPort {
     return this.userRepo.findByCoachId(coachid);
   }
 
+  async rimuoviAtletaDalRoster(coachId: string, atletaId: string): Promise<void> {
+    const atleta = await this.userRepo.findById(atletaId);
+    if (!atleta) throw new Error("Atleta non trovato");
+
+    // Verifica che l'atleta sia effettivamente seguito da questo coach (se ha un coachid impostato)
+    if (atleta.coachid && atleta.coachid !== coachId) {
+      throw new Error("L'atleta non è nel tuo roster diretto");
+    }
+
+    // Scollega l'atleta
+    await this.userRepo.update(atletaId, { coachid: undefined as any });
+
+    // Audit Log
+    await this.auditRepo.registra({
+      utenteId: coachId,
+      azione: "RIMOZIONE_ATLETA_ROSTER",
+      datiJSON: { atletaId, email: atleta.email },
+      timestamp: new Date().toISOString()
+    });
+  }
+
   // ─── Coach profilo ───────────────────────────────────────────────────────────
   async getProfiloCoach(userid: string): Promise<Coach | null> {
     return this.coachRepo.findByUserId(userid);

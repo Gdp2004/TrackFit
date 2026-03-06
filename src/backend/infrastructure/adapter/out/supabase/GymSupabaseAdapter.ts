@@ -140,6 +140,20 @@ export class GymSupabaseAdapter implements GymRepositoryPort {
         return top as ListaAttesa;
     }
 
+    async findPrenotazioneByUtenteAndCorso(userid: string, corsoid: string): Promise<Prenotazione | null> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase
+            .from("prenotazioni")
+            .select("*")
+            .eq("userid", userid)
+            .eq("corsoid", corsoid)
+            .in("stato", ["CONFERMATA", "IN_ATTESA"])
+            .maybeSingle();
+
+        if (error) return null;
+        return data as Prenotazione;
+    }
+
     // R9: Carica strutture fuzzy
     async matchStruttureFuzzy(denominazione: string, indirizzo: string): Promise<Struttura[]> {
         const supabase = createSupabaseServerClient();

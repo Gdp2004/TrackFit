@@ -3,7 +3,7 @@
 // Outbound repository interface (Hexagonal Architecture)
 // ============================================================
 
-import { Abbonamento } from "@/backend/domain/model/types";
+import { Abbonamento, TipoAbbonamento } from "@/backend/domain/model/types";
 import { StatoAbbonamentoEnum } from "@/backend/domain/model/enums";
 
 export interface SubscriptionRepositoryPort {
@@ -13,4 +13,5 @@ export interface SubscriptionRepositoryPort {
     findByQrCode(qrcode: string): Promise<Abbonamento | null>;
     update(id: string, data: Partial<Abbonamento>): Promise<Abbonamento>;
     existsActiveByUserId(userid: string): Promise<boolean>;
+    findTipoById(id: string): Promise<TipoAbbonamento | null>;
 }

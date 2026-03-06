@@ -9,7 +9,8 @@ import { useRoleRedirect } from "@frontend/hooks/useRoleRedirect";
 import { RuoloEnum } from "@backend/domain/model/enums";
 import type { User } from "@backend/domain/model/types";
 
-function AtletaCard({ atleta }: { atleta: User }) {
+function AtletaCard({ atleta, onRemove }: { atleta: User, onRemove: (id: string) => void }) {
+    const [loading, setLoading] = useState(false);
     const initials = `${atleta.nome[0]}${atleta.cognome[0]}`.toUpperCase();
     const colors = ["hsl(var(--tf-primary))", "hsl(var(--tf-accent))", "hsl(200 80% 55%)"];
     const color = colors[atleta.id.charCodeAt(0) % colors.length];
@@ -51,17 +52,38 @@ function AtletaCard({ atleta }: { atleta: User }) {
                 </p>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.25rem" }}>
-                {atleta.peso && (
-                    <span style={{ fontSize: "0.72rem", color: "hsl(var(--tf-text-muted))" }}>
-                        ⚖️ {atleta.peso} kg
-                    </span>
-                )}
-                {atleta.altezza && (
-                    <span style={{ fontSize: "0.72rem", color: "hsl(var(--tf-text-muted))" }}>
-                        📏 {atleta.altezza} cm
-                    </span>
-                )}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
+                <button
+                    onClick={() => { if (confirm("Sei sicuro di voler rimuovere questo atleta dal tuo roster?")) onRemove(atleta.id); }}
+                    disabled={loading}
+                    style={{
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        fontSize: "0.65rem",
+                        fontWeight: 700,
+                        background: "hsl(var(--tf-danger)/.1)",
+                        color: "hsl(var(--tf-danger))",
+                        border: "1px solid hsl(var(--tf-danger)/.2)",
+                        cursor: "pointer",
+                        textTransform: "uppercase",
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = "hsl(var(--tf-danger)/.2)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "hsl(var(--tf-danger)/.1)"}
+                >
+                    Rimuovi
+                </button>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                    {atleta.peso && (
+                        <span style={{ fontSize: "0.72rem", color: "hsl(var(--tf-text-muted))" }}>
+                            ⚖️ {atleta.peso}
+                        </span>
+                    )}
+                    {atleta.altezza && (
+                        <span style={{ fontSize: "0.72rem", color: "hsl(var(--tf-text-muted))" }}>
+                            📏 {atleta.altezza}
+                        </span>
+                    )}
+                </div>
             </div>
         </div>
     );
@@ -72,29 +94,48 @@ export default function CoachAtletiPage() {
     const [atleti, setAtleti] = useState<User[]>([]);
     const [loadingAtleti, setLoadingAtleti] = useState(true);
     const [search, setSearch] = useState("");
+    const [coachId, setCoachId] = useState<string | null>(null);
+
+    const fetchAtleti = async () => {
+        try {
+            const meRes = await fetch("/api/coaches/me");
+            if (!meRes.ok) return;
+            const meData = await meRes.json();
+            const cid = meData.coach?.id;
+            if (!cid) return;
+            setCoachId(cid);
+
+            const res = await fetch(`/api/coaches/${cid}/atleti`);
+            if (res.ok) {
+                const data = await res.json();
+                setAtleti(data ?? []);
+            }
+        } finally {
+            setLoadingAtleti(false);
+        }
+    };
 
     useEffect(() => {
         if (!user) return;
-        const fetchAtleti = async () => {
-            try {
-                // First get coach profile, then get atleti
-                const meRes = await fetch("/api/coaches/me");
-                if (!meRes.ok) return;
-                const meData = await meRes.json();
-                const coachId = meData.coach?.id;
-                if (!coachId) return;
-
-                const res = await fetch(`/api/coaches/${coachId}/atleti`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setAtleti(data ?? []);
-                }
-            } finally {
-                setLoadingAtleti(false);
-            }
-        };
         fetchAtleti();
     }, [user]);
+
+    const handleRemoveAtleta = async (atletaId: string) => {
+        if (!coachId) return;
+        try {
+            const res = await fetch(`/api/coaches/${coachId}/atleti/${atletaId}`, {
+                method: "DELETE",
+            });
+            if (res.ok) {
+                setAtleti(prev => prev.filter(a => a.id !== atletaId));
+            } else {
+                const d = await res.json();
+                alert(d.error ?? "Errore nella rimozione");
+            }
+        } catch {
+            alert("Errore di rete");
+        }
+    };
 
     if (loading) return null;
 
@@ -161,7 +202,7 @@ export default function CoachAtletiPage() {
             ) : (
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "0.75rem" }}>
                     {atletiFiltrati.map(atleta => (
-                        <AtletaCard key={atleta.id} atleta={atleta} />
+                        <AtletaCard key={atleta.id} atleta={atleta} onRemove={handleRemoveAtleta} />
                     ))}
                 </div>
             )}

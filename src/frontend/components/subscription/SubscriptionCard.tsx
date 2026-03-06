@@ -6,7 +6,10 @@ import { StatoAbbonamentoEnum } from "@backend/domain/model/enums";
 import QRCode from "react-qr-code";
 import { memo } from "react";
 
-interface SubscriptionCardProps { abbonamento: Abbonamento; }
+interface SubscriptionCardProps {
+  abbonamento: Abbonamento;
+  onCancel?: (id: string) => void;
+}
 
 type BadgeColor = "green" | "red" | "yellow" | "gray" | "blue" | "purple";
 const STATO_BADGE: Record<string, { color: BadgeColor; label: string }> = {
@@ -16,7 +19,7 @@ const STATO_BADGE: Record<string, { color: BadgeColor; label: string }> = {
   CANCELLATO: { color: "gray", label: "Cancellato" },
 };
 
-export const SubscriptionCard = memo(function SubscriptionCard({ abbonamento }: SubscriptionCardProps) {
+export const SubscriptionCard = memo(function SubscriptionCard({ abbonamento, onCancel }: SubscriptionCardProps) {
   const badge = STATO_BADGE[abbonamento.stato] ?? { color: "gray" as BadgeColor, label: abbonamento.stato };
   const now = new Date();
   const inizio = new Date(abbonamento.datainizio);
@@ -70,6 +73,34 @@ export const SubscriptionCard = memo(function SubscriptionCard({ abbonamento }: 
           }} />
         </div>
       </div>
+
+      {/* Action Buttons */}
+      {isAttivo && onCancel && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "0.5rem" }}>
+          <button
+            onClick={() => onCancel(abbonamento.id)}
+            style={{
+              padding: "0.5rem 1rem",
+              borderRadius: "var(--tf-radius-sm)",
+              border: "1px solid hsl(var(--tf-danger))",
+              background: "transparent",
+              color: "hsl(var(--tf-danger))",
+              fontSize: "0.875rem",
+              fontWeight: 600,
+              cursor: "pointer",
+              transition: "all 0.2s"
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = "hsl(var(--tf-danger)/.1)";
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = "transparent";
+            }}
+          >
+            Cancella Abbonamento
+          </button>
+        </div>
+      )}
 
       {/* QR code area */}
       {abbonamento.qrcode && (

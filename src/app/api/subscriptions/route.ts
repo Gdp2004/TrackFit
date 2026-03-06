@@ -124,3 +124,17 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: String(err) }, { status: 400 });
   }
 }
+
+// DELETE /api/subscriptions – Cancella abbonamento
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const parsed = z.object({ abbonamentoid: z.string().uuid() }).safeParse(body);
+    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    const service = buildService();
+    await service.cancellaAbbonamento(parsed.data.abbonamentoid);
+    return NextResponse.json({ message: "Abbonamento cancellato." });
+  } catch (err: unknown) {
+    return NextResponse.json({ error: String(err) }, { status: 400 });
+  }
+}

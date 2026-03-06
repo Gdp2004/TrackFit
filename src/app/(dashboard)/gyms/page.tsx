@@ -6,6 +6,7 @@ import { Button } from "@frontend/components/ui/Button";
 import { Card } from "@frontend/components/ui/Card";
 import { CourseCard } from "@frontend/components/gym/CourseCard";
 import type { Struttura, Corso } from "@backend/domain/model/types";
+import { useAuth } from "@frontend/contexts/AuthContext";
 
 interface GymWithCorsi {
     struttura: Struttura;
@@ -46,20 +47,30 @@ export default function GymsPage() {
 
     const toggle = (id: string) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
 
-    const handleBook = async (corsoid: string) => {
+    const { user } = useAuth();
+
+    const handleBook = async (corsoid: string, strutturaid: string) => {
+        if (!user) {
+            alert("Devi effettuare l'accesso per prenotare");
+            return;
+        }
         setBooking(corsoid);
         try {
             const res = await fetch("/api/gyms/corsi/prenotazioni", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ corsoid }),
+                body: JSON.stringify({
+                    corsoid,
+                    strutturaid,
+                    userid: user.id
+                }),
             });
             if (res.ok) {
                 setNotify(corsoid);
                 setTimeout(() => setNotify(null), 3000);
             } else {
                 const data = await res.json();
-                alert(data.error ?? "Errore durante la prenotazione.");
+                alert(typeof data.error === "string" ? data.error : JSON.stringify(data.error));
             }
         } finally {
             setBooking(null);
@@ -152,7 +163,7 @@ export default function GymsPage() {
                                         </p>
                                     ) : (
                                         corsi.map((c) => (
-                                            <CourseCard key={c.id} corso={c} onBook={handleBook} loading={booking === c.id} />
+                                            <CourseCard key={c.id} corso={c} onBook={() => handleBook(c.id, c.strutturaid)} loading={booking === c.id} />
                                         ))
                                     )}
                                 </div>
