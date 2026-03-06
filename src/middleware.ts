@@ -19,6 +19,7 @@ import { createServerClient, type CookieMethodsServer } from "@supabase/ssr";
 const ROUTE_ROLES: Record<string, string[]> = {
     // Admin
     "/api/admin/users": ["ADMIN"],
+    "/api/admin": ["ADMIN"],
     // User profile (all authenticated roles)
     "/api/users/me": ["UTENTE", "COACH", "GESTORE", "ADMIN"],
     // Gyms

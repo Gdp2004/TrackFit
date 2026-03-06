@@ -33,6 +33,24 @@ export interface Coach {
     disponibilita?: SlotDisponibilita[];
 }
 
+export interface CoachWithUser {
+    id: string;                 // coach id
+    userid: string;             // FK → users
+    strutturaid?: string;
+    specializzazione: string;
+    rating?: number;
+    bio?: string;
+    telefono?: string;
+    user: {
+        id: string;
+        email: string;
+        nome: string;
+        cognome: string;
+        ruolo: RuoloEnum;
+        createdat: string;
+    }
+}
+
 export interface SlotDisponibilita {
     giornoSettimana: number;    // 0 = domenica
     oraInizio: string;          // "HH:MM"

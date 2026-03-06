@@ -9,6 +9,8 @@ import { NextRequest } from "next/server";
 import { z } from "zod";
 import { getUserService } from "@/backend/infrastructure/config/serviceFactory";
 import { ok, paginated, fail } from "@/backend/infrastructure/http/apiResponse";
+
+export const dynamic = "force-dynamic";
 import {
     UnauthorizedError,
     ValidationError,

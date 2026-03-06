@@ -4,7 +4,7 @@
 // ============================================================
 
 import { CoachRepositoryPort } from "@/backend/domain/port/out/CoachRepositoryPort";
-import { Coach, Prenotazione, CoachStats } from "@/backend/domain/model/types";
+import { Coach, Prenotazione, CoachStats, CoachWithUser } from "@/backend/domain/model/types";
 import { StatoPrenotazioneEnum } from "@/backend/domain/model/enums";
 import { createSupabaseServerClient } from "@/backend/infrastructure/config/supabase";
 
@@ -42,6 +42,20 @@ export class CoachSupabaseAdapter implements CoachRepositoryPort {
         const { data, error } = await supabase.from("coaches").select("*").order("rating", { ascending: false });
         if (error) return [];
         return (data ?? []) as Coach[];
+    }
+
+    async findAllWithUserDetails(): Promise<CoachWithUser[]> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase
+            .from("coaches")
+            .select("*, user:users!inner(*)")
+            .order("rating", { ascending: false });
+
+        if (error) {
+            console.error("Errore fetch coach con utenti:", error.message);
+            return [];
+        }
+        return (data ?? []) as CoachWithUser[];
     }
 
     async findByStrutturaId(strutturaid: string): Promise<Coach[]> {

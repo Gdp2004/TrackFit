@@ -1,6 +1,7 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@backend/infrastructure/config/supabase";
+import { getCoachService } from "@/backend/infrastructure/config/serviceFactory";
 
 const PrenotaSchema = z.object({
   userid: z.string().uuid(),
@@ -8,7 +9,7 @@ const PrenotaSchema = z.object({
   dataora: z.string().datetime(),
 });
 
-// POST /api/coaches â€“ prenota uno slot con il coach (UC7)
+// POST /api/coaches – prenota uno slot con il coach (UC7)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
@@ -24,12 +25,23 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/coaches?coachid=xxx â€“ roster atleti del coach (UC6)
+// GET /api/coaches?coachid=xxx – roster atleti del coach (UC6)
+// GET /api/coaches – lista completa coach per utenti/guest
 export async function GET(req: NextRequest) {
-  const coachid = req.nextUrl.searchParams.get("coachid");
-  if (!coachid) return NextResponse.json({ error: "coachid obbligatorio" }, { status: 400 });
-  const supabase = createSupabaseServerClient();
-  const { data, error } = await supabase.from("prenotazioni").select("*").eq("coachid", coachid);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data);
+  try {
+    const coachid = req.nextUrl.searchParams.get("coachid");
+
+    if (coachid) {
+      const supabase = createSupabaseServerClient();
+      const { data, error } = await supabase.from("prenotazioni").select("*").eq("coachid", coachid);
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json(data);
+    } else {
+      const service = getCoachService();
+      const coaches = await service.getTuttiCoachesWithDetails();
+      return NextResponse.json({ success: true, data: coaches }, { status: 200 });
+    }
+  } catch (err: unknown) {
+    return NextResponse.json({ error: String(err) }, { status: 500 });
+  }
 }

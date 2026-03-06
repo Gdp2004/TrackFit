@@ -4,7 +4,7 @@
 // Source: SDD section 3.4 (UC6/UC7)
 // ============================================================
 
-import { Prenotazione, User, Coach, CoachStats } from "@/backend/domain/model/types";
+import { Prenotazione, User, Coach, CoachStats, CoachWithUser } from "@/backend/domain/model/types";
 
 export interface CoachManagementPort {
     prenotaSlotCoach(userid: string, coachid: string, dataora: Date): Promise<Prenotazione & { clientSecret?: string }>;
@@ -17,4 +17,5 @@ export interface CoachManagementPort {
     getCoachStats(coachid: string): Promise<CoachStats>;
     getPrenotazioniCoach(coachid: string): Promise<Prenotazione[]>;
     getCoachesByStruttura(strutturaid: string): Promise<Coach[]>;
+    getTuttiCoachesWithDetails(): Promise<CoachWithUser[]>;
 }

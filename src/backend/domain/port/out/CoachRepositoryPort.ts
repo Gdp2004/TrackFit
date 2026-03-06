@@ -3,7 +3,7 @@
 // Outbound repository interface (Hexagonal Architecture)
 // ============================================================
 
-import { Coach, Prenotazione, CoachStats } from "@/backend/domain/model/types";
+import { Coach, CoachWithUser, Prenotazione, CoachStats } from "@/backend/domain/model/types";
 
 export interface CoachRepositoryPort {
     save(coach: Partial<Coach>): Promise<Coach>;
@@ -11,6 +11,7 @@ export interface CoachRepositoryPort {
     findById(id: string): Promise<Coach | null>;
     findByUserId(userid: string): Promise<Coach | null>;
     findAll(): Promise<Coach[]>;
+    findAllWithUserDetails(): Promise<CoachWithUser[]>;
     findByStrutturaId(strutturaid: string): Promise<Coach[]>;
     getStats(coachid: string): Promise<CoachStats>;
     savePrenotazione(prenotazione: Partial<Prenotazione>): Promise<Prenotazione>;

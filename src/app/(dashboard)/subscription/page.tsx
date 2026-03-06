@@ -13,7 +13,9 @@ import { useAuth } from "@frontend/contexts/AuthContext";
 import { useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
-export default function SubscriptionPage() {
+import { Suspense } from "react";
+
+function SubscriptionContent() {
     const { user } = useAuth();
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -147,5 +149,13 @@ export default function SubscriptionPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function SubscriptionPage() {
+    return (
+        <Suspense fallback={<div style={{ textAlign: "center", padding: "3rem" }}>Caricamento...</div>}>
+            <SubscriptionContent />
+        </Suspense>
     );
 }

@@ -70,8 +70,8 @@ export class UserSupabaseAdapter implements UserRepositoryPort {
     }
 
     async countAll(): Promise<number> {
-        const supabase = createSupabaseServerClient();
-        const { count, error } = await supabase
+        const admin = createAdminClient();
+        const { count, error } = await admin
             .from("users")
             .select("id", { count: "exact", head: true });
         if (error) return 0;
@@ -79,8 +79,8 @@ export class UserSupabaseAdapter implements UserRepositoryPort {
     }
 
     async findAll(): Promise<User[]> {
-        const supabase = createSupabaseServerClient();
-        const { data, error } = await supabase
+        const admin = createAdminClient();
+        const { data, error } = await admin
             .from("users")
             .select("*")
             .order("createdat", { ascending: false });
@@ -89,8 +89,8 @@ export class UserSupabaseAdapter implements UserRepositoryPort {
     }
 
     async findByRuolo(ruolo: RuoloEnum): Promise<User[]> {
-        const supabase = createSupabaseServerClient();
-        const { data, error } = await supabase
+        const admin = createAdminClient();
+        const { data, error } = await admin
             .from("users")
             .select("*")
             .eq("ruolo", ruolo)

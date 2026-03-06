@@ -11,7 +11,7 @@ import { NotificationServicePort } from "@/backend/domain/port/out/NotificationS
 import { AuditLogRepositoryPort } from "@/backend/domain/port/out/AuditLogRepositoryPort";
 import { PaymentGatewayPort } from "@/backend/domain/port/out/PaymentGatewayPort";
 import { PaymentRepositoryPort } from "@/backend/domain/port/out/PaymentRepositoryPort";
-import { Prenotazione, User, Coach, CoachStats } from "@/backend/domain/model/types";
+import { Prenotazione, User, Coach, CoachStats, CoachWithUser } from "@/backend/domain/model/types";
 import { StatoPagamentoEnum, StatoPrenotazioneEnum } from "@/backend/domain/model/enums";
 
 export class CreateCoachManagerService implements CoachManagementPort {
@@ -188,5 +188,9 @@ export class CreateCoachManagerService implements CoachManagementPort {
 
   async getCoachesByStruttura(strutturaid: string): Promise<Coach[]> {
     return this.coachRepo.findByStrutturaId(strutturaid);
+  }
+
+  async getTuttiCoachesWithDetails(): Promise<CoachWithUser[]> {
+    return this.coachRepo.findAllWithUserDetails();
   }
 }

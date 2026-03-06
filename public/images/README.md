@@ -53,5 +53,4 @@ import Image from "next/image";
 
 1. Copia il file nella sottocartella corretta (es. `public/images/coach/`)
 2. Referenzia con il path assoluto dalla root: `/images/coach/nome-file.png`
-3. Indica al tuo assistente AI (Antigravity): 
-   > "Usa l'immagine `/images/coach/nome-file.png` nella dashboard coach"
+
