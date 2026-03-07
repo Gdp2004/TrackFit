@@ -9,79 +9,98 @@ import { useRoleRedirect } from "@frontend/hooks/useRoleRedirect";
 import { RuoloEnum } from "@backend/domain/model/enums";
 import type { User } from "@backend/domain/model/types";
 
-function AtletaCard({ atleta, onRemove }: { atleta: User, onRemove: (id: string) => void }) {
+import { AthleteInfoModal } from "@/frontend/components/coach/AthleteInfoModal";
+
+function AtletaCard({ atleta, onRemove, onClick }: { atleta: User, onRemove: (id: string) => void, onClick: () => void }) {
     const [loading, setLoading] = useState(false);
     const initials = `${atleta.nome[0]}${atleta.cognome[0]}`.toUpperCase();
     const colors = ["hsl(var(--tf-primary))", "hsl(var(--tf-accent))", "hsl(200 80% 55%)"];
     const color = colors[atleta.id.charCodeAt(0) % colors.length];
 
     return (
-        <div style={{
-            padding: "1.25rem",
-            borderRadius: "var(--tf-radius)",
-            background: "hsl(var(--tf-surface))",
-            border: "1px solid hsl(var(--tf-border))",
-            display: "flex",
-            alignItems: "center",
-            gap: "1rem",
-            transition: "border-color 0.2s, transform 0.15s",
-        }}
+        <div
+            onClick={onClick}
+            style={{
+                padding: "1.25rem",
+                borderRadius: "var(--tf-radius)",
+                background: "hsl(var(--tf-surface))",
+                border: "1px solid hsl(var(--tf-border))",
+                display: "flex",
+                alignItems: "center",
+                gap: "1rem",
+                transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+                cursor: "pointer",
+            }}
             onMouseEnter={e => {
                 (e.currentTarget as HTMLDivElement).style.borderColor = "hsl(var(--tf-primary)/.4)";
-                (e.currentTarget as HTMLDivElement).style.transform = "translateY(-2px)";
+                (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)";
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3)";
             }}
             onMouseLeave={e => {
                 (e.currentTarget as HTMLDivElement).style.borderColor = "hsl(var(--tf-border))";
                 (e.currentTarget as HTMLDivElement).style.transform = "none";
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
             }}
         >
             {/* Avatar */}
             <div style={{
-                width: 48, height: 48, borderRadius: "50%", flexShrink: 0,
-                background: color, display: "flex",
+                width: 54, height: 54, borderRadius: "16px", flexShrink: 0,
+                background: `linear-gradient(135deg, ${color}, ${color}dd)`, display: "flex",
                 alignItems: "center", justifyContent: "center",
-                fontWeight: 800, fontSize: "1rem", color: "#fff",
+                fontWeight: 800, fontSize: "1.1rem", color: "#fff",
+                boxShadow: `0 4px 12px ${color}44`,
             }}>
                 {initials}
             </div>
 
             <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontWeight: 700, fontSize: "0.95rem" }}>{atleta.nome} {atleta.cognome}</p>
-                <p style={{ fontSize: "0.78rem", color: "hsl(var(--tf-text-muted))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <p style={{ fontWeight: 700, fontSize: "1rem", color: "hsl(var(--tf-text))", marginBottom: "0.15rem" }}>{atleta.nome} {atleta.cognome}</p>
+                <p style={{ fontSize: "0.8rem", color: "hsl(var(--tf-text-muted))", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {atleta.email}
                 </p>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.75rem" }}>
                 <button
-                    onClick={() => { if (confirm("Sei sicuro di voler rimuovere questo atleta dal tuo roster?")) onRemove(atleta.id); }}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (confirm("Sei sicuro di voler rimuovere questo atleta dal tuo roster?")) onRemove(atleta.id);
+                    }}
                     disabled={loading}
                     style={{
-                        padding: "4px 8px",
-                        borderRadius: "4px",
-                        fontSize: "0.65rem",
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        fontSize: "0.7rem",
                         fontWeight: 700,
-                        background: "hsl(var(--tf-danger)/.1)",
-                        color: "hsl(var(--tf-danger))",
-                        border: "1px solid hsl(var(--tf-danger)/.2)",
+                        background: "rgba(239, 68, 68, 0.1)",
+                        color: "rgb(248, 113, 113)",
+                        border: "1px solid rgba(239, 68, 68, 0.1)",
                         cursor: "pointer",
                         textTransform: "uppercase",
+                        letterSpacing: "0.02em",
+                        transition: "all 0.2s"
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = "hsl(var(--tf-danger)/.2)"}
-                    onMouseLeave={e => e.currentTarget.style.background = "hsl(var(--tf-danger)/.1)"}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.2)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "rgba(239, 68, 68, 0.1)"}
                 >
                     Rimuovi
                 </button>
-                <div style={{ display: "flex", gap: "0.5rem" }}>
+                <div style={{ display: "flex", gap: "0.6rem" }}>
                     {atleta.peso && (
-                        <span style={{ fontSize: "0.72rem", color: "hsl(var(--tf-text-muted))" }}>
-                            ⚖️ {atleta.peso}
-                        </span>
+                        <div style={{
+                            fontSize: "0.75rem", color: "hsl(var(--tf-text-muted))",
+                            background: "rgba(255,255,255,0.03)", padding: "2px 6px", borderRadius: "4px"
+                        }}>
+                            {atleta.peso} kg
+                        </div>
                     )}
                     {atleta.altezza && (
-                        <span style={{ fontSize: "0.72rem", color: "hsl(var(--tf-text-muted))" }}>
-                            📏 {atleta.altezza}
-                        </span>
+                        <div style={{
+                            fontSize: "0.75rem", color: "hsl(var(--tf-text-muted))",
+                            background: "rgba(255,255,255,0.03)", padding: "2px 6px", borderRadius: "4px"
+                        }}>
+                            {atleta.altezza} cm
+                        </div>
                     )}
                 </div>
             </div>
@@ -95,6 +114,7 @@ export default function CoachAtletiPage() {
     const [loadingAtleti, setLoadingAtleti] = useState(true);
     const [search, setSearch] = useState("");
     const [coachId, setCoachId] = useState<string | null>(null);
+    const [selectedAtleta, setSelectedAtleta] = useState<User | null>(null);
 
     const fetchAtleti = async () => {
         try {
@@ -175,7 +195,10 @@ export default function CoachAtletiPage() {
                     outline: "none",
                     width: "100%",
                     maxWidth: 400,
+                    transition: "border-color 0.2s",
                 }}
+                onFocus={(e) => e.target.style.borderColor = "hsl(var(--tf-primary)/.4)"}
+                onBlur={(e) => e.target.style.borderColor = "hsl(var(--tf-border))"}
             />
 
             {/* Lista */}
@@ -200,12 +223,24 @@ export default function CoachAtletiPage() {
                     </p>
                 </div>
             ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "0.75rem" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1rem" }}>
                     {atletiFiltrati.map(atleta => (
-                        <AtletaCard key={atleta.id} atleta={atleta} onRemove={handleRemoveAtleta} />
+                        <AtletaCard
+                            key={atleta.id}
+                            atleta={atleta}
+                            onRemove={handleRemoveAtleta}
+                            onClick={() => setSelectedAtleta(atleta)}
+                        />
                     ))}
                 </div>
             )}
+
+            <AthleteInfoModal
+                atleta={selectedAtleta}
+                open={!!selectedAtleta}
+                onClose={() => setSelectedAtleta(null)}
+                onRemove={handleRemoveAtleta}
+            />
         </div>
     );
 }

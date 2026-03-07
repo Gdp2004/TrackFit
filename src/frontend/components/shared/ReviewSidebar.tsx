@@ -1,6 +1,5 @@
-"use client";
-
 import { useState, useEffect } from "react";
+import { Modal } from "@frontend/components/ui/Modal";
 import { Button } from "@frontend/components/ui/Button";
 
 interface ReviewSidebarProps {
@@ -26,8 +25,6 @@ export function ReviewSidebar({ coachId, strutturaId, name, isOpen, onClose, onS
             setError(null);
         }
     }, [isOpen]);
-
-    if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,145 +56,113 @@ export function ReviewSidebar({ coachId, strutturaId, name, isOpen, onClose, onS
     };
 
     return (
-        <div
-            style={{
-                position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-                background: "rgba(0,0,0,0.4)", zIndex: 2000,
-                display: "flex", justifyContent: "flex-end",
-                backdropFilter: "blur(4px)"
-            }}
-            onClick={onClose}
-        >
-            <div
-                style={{
-                    width: "100%", maxWidth: "420px", height: "100dvh",
-                    background: "hsl(var(--tf-surface))",
-                    boxShadow: "-10px 0 40px rgba(0,0,0,0.15)",
-                    display: "flex", flexDirection: "column",
-                    animation: "slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1)",
-                }}
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Decorative Header */}
+        <Modal open={isOpen} onClose={onClose} title="La tua opinione">
+            <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+                {/* Header context */}
                 <div style={{
-                    padding: "2rem 1.5rem 1.5rem",
+                    padding: "1.25rem",
                     background: "linear-gradient(135deg, hsl(var(--tf-primary)), hsl(var(--tf-accent)))",
                     color: "white",
-                    position: "relative",
-                    flexShrink: 0
+                    borderRadius: "var(--tf-radius-sm)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "1rem"
                 }}>
-                    <button onClick={onClose} style={{
-                        position: "absolute", top: "1rem", right: "1rem",
-                        background: "rgba(255,255,255,0.2)", border: "none",
-                        width: "32px", height: "32px", borderRadius: "50%",
-                        fontSize: "1.2rem", cursor: "pointer", color: "white",
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        transition: "background 0.2s"
-                    }}
-                        onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.3)"}
-                        onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.2)"}
-                    >✕</button>
-
-                    <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>⭐️</div>
-                    <h2 style={{ fontSize: "1.5rem", fontWeight: 800, margin: 0 }}>La tua opinione conta</h2>
-                    <p style={{ fontSize: "0.9rem", opacity: 0.9, marginTop: "0.25rem", margin: 0 }}>
-                        Recensisci <strong>{name}</strong>
-                    </p>
+                    <div style={{ fontSize: "2rem" }}>⭐️</div>
+                    <div>
+                        <p style={{ fontSize: "0.85rem", opacity: 0.9, marginBottom: "0.2rem" }}>Stai recensendo</p>
+                        <h3 style={{ fontSize: "1.1rem", fontWeight: 800, margin: 0 }}>{name}</h3>
+                    </div>
                 </div>
 
-                {/* Content */}
-                <div style={{ padding: "2rem 1.5rem", flex: 1, overflowY: "auto", display: "flex", flexDirection: "column" }}>
-                    <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "2rem", flex: 1 }}>
-
-                        {/* Rating Selection */}
-                        <div style={{ textAlign: "center", flexShrink: 0 }}>
-                            <label style={{ fontSize: "0.9rem", fontWeight: 700, color: "hsl(var(--tf-text-muted))", display: "block", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                                Quanto sei soddisfatto?
-                            </label>
-                            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <button
-                                        key={star}
-                                        type="button"
-                                        onClick={() => setVoto(star)}
-                                        style={{
-                                            background: "none", border: "none", fontSize: "2.5rem",
-                                            cursor: "pointer", color: star <= voto ? "#f59e0b" : "hsl(var(--tf-surface-2))",
-                                            transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                                            transform: star <= voto ? "scale(1.1)" : "scale(1)",
-                                            filter: star <= voto ? "drop-shadow(0 4px 6px rgba(245, 158, 11, 0.3))" : "none",
-                                            padding: 0, lineHeight: 1
-                                        }}
-                                        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
-                                        onMouseLeave={(e) => (e.currentTarget.style.transform = star <= voto ? "scale(1.1)" : "scale(1)")}
-                                    >
-                                        ★
-                                    </button>
-                                ))}
-                            </div>
+                <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+                    {/* Rating Selection */}
+                    <div style={{ textAlign: "center" }}>
+                        <label style={{ fontSize: "0.75rem", fontWeight: 800, color: "hsl(var(--tf-text-muted))", display: "block", marginBottom: "1rem", textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                            Valutazione
+                        </label>
+                        <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
+                            {[1, 2, 3, 4, 5].map((star) => (
+                                <button
+                                    key={star}
+                                    type="button"
+                                    onClick={() => setVoto(star)}
+                                    style={{
+                                        background: "none", border: "none", fontSize: "2.5rem",
+                                        cursor: "pointer", color: star <= voto ? "#f59e0b" : "rgba(255,255,255,0.05)",
+                                        transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                                        transform: star <= voto ? "scale(1.15)" : "scale(1)",
+                                        filter: star <= voto ? "drop-shadow(0 0 10px rgba(245, 158, 11, 0.4))" : "none",
+                                        padding: "0 0.1rem", lineHeight: 1
+                                    }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.3)")}
+                                    onMouseLeave={(e) => (e.currentTarget.style.transform = star <= voto ? "scale(1.15)" : "scale(1)")}
+                                >
+                                    ★
+                                </button>
+                            ))}
                         </div>
+                    </div>
 
-                        {/* Comment */}
-                        <div style={{ flexShrink: 0 }}>
-                            <label style={{ fontSize: "0.9rem", fontWeight: 700, display: "block", marginBottom: "0.75rem", color: "hsl(var(--tf-text))" }}>
-                                Racconta nei dettagli
-                            </label>
-                            <textarea
-                                value={commento}
-                                onChange={(e) => setCommento(e.target.value)}
-                                placeholder="Cosa ti è piaciuto di più? Cosa si potrebbe migliorare?"
-                                style={{
-                                    width: "100%", height: "140px", padding: "1rem",
-                                    borderRadius: "1rem",
-                                    border: "2px solid hsl(var(--tf-border))",
-                                    background: "hsl(var(--tf-bg))",
-                                    color: "hsl(var(--tf-text))",
-                                    fontSize: "0.95rem", resize: "none",
-                                    transition: "border-color 0.2s, box-shadow 0.2s",
-                                    outline: "none"
-                                }}
-                                onFocus={(e) => {
-                                    e.currentTarget.style.borderColor = "hsl(var(--tf-primary))";
-                                    e.currentTarget.style.boxShadow = "0 0 0 4px hsl(var(--tf-primary)/.1)";
-                                }}
-                                onBlur={(e) => {
-                                    e.currentTarget.style.borderColor = "hsl(var(--tf-border))";
-                                    e.currentTarget.style.boxShadow = "none";
-                                }}
-                            />
+                    {/* Comment */}
+                    <div>
+                        <label style={{ fontSize: "0.85rem", fontWeight: 700, display: "block", marginBottom: "0.75rem", color: "hsl(var(--tf-text))" }}>
+                            Raccontaci la tua esperienza
+                        </label>
+                        <textarea
+                            value={commento}
+                            onChange={(e) => setCommento(e.target.value)}
+                            placeholder="Cosa ti è piaciuto di più?"
+                            style={{
+                                width: "100%", height: "120px", padding: "1rem",
+                                borderRadius: "1rem",
+                                border: "1px solid rgba(255,255,255,0.1)",
+                                background: "rgba(255,255,255,0.03)",
+                                color: "hsl(var(--tf-text))",
+                                fontSize: "0.95rem", resize: "none",
+                                transition: "all 0.2s",
+                                outline: "none",
+                                lineHeight: 1.6
+                            }}
+                            onFocus={(e) => {
+                                e.currentTarget.style.borderColor = "hsl(var(--tf-primary))";
+                                e.currentTarget.style.boxShadow = "0 0 15px hsl(var(--tf-primary)/.1)";
+                            }}
+                            onBlur={(e) => {
+                                e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
+                                e.currentTarget.style.boxShadow = "none";
+                            }}
+                        />
+                    </div>
+
+                    {error && (
+                        <div style={{
+                            padding: "1rem", borderRadius: "0.75rem",
+                            background: "rgba(239, 68, 68, 0.1)", color: "rgb(248, 113, 113)",
+                            fontSize: "0.85rem", fontWeight: 600, display: "flex", gap: "0.5rem", alignItems: "center",
+                            border: "1px solid rgba(239, 68, 68, 0.2)"
+                        }}>
+                            <span>⚠️</span> {error}
                         </div>
+                    )}
 
-                        {error && (
-                            <div style={{
-                                padding: "1rem", borderRadius: "0.75rem",
-                                background: "hsl(var(--tf-danger)/.1)", color: "hsl(var(--tf-danger))",
-                                fontSize: "0.85rem", fontWeight: 600, display: "flex", gap: "0.5rem", alignItems: "center",
-                                flexShrink: 0
-                            }}>
-                                <span>⚠️</span> {error}
-                            </div>
-                        )}
-
-                        <div style={{ marginTop: "auto", paddingTop: "1rem", flexShrink: 0 }}>
-                            <Button type="submit" isLoading={loading} style={{
-                                width: "100%", height: "3rem", fontSize: "1rem", borderRadius: "0.75rem",
-                                background: "linear-gradient(135deg, hsl(var(--tf-primary)), hsl(var(--tf-accent)))",
-                                boxShadow: "0 4px 14px 0 hsl(var(--tf-primary)/.3)",
-                                color: "white" // Ensure text is white
-                            }}>
-                                Pubblica recensione
-                            </Button>
-                        </div>
-                    </form>
-                </div>
+                    <div style={{ display: "flex", gap: "1rem" }}>
+                        <Button variant="ghost" onClick={onClose} style={{ flex: 1 }}>Annulla</Button>
+                        <Button type="submit" isLoading={loading} style={{
+                            flex: 2, height: "3rem", fontSize: "1rem", fontWeight: 800,
+                            borderRadius: "var(--tf-radius-sm)",
+                            background: "linear-gradient(135deg, hsl(var(--tf-primary)), hsl(var(--tf-accent)))",
+                            boxShadow: "0 4px 15px hsl(var(--tf-primary)/.3)",
+                            color: "white"
+                        }}>
+                            Pubblica recensione
+                        </Button>
+                    </div>
+                </form>
             </div>
-
-            <style jsx>{`
-                @keyframes slideInRight {
-                    from { transform: translateX(100%); opacity: 0; }
-                    to { transform: translateX(0); opacity: 1; }
-                }
-            `}</style>
-        </div>
+        </Modal>
     );
 }
+
+
+

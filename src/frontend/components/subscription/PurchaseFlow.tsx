@@ -41,6 +41,8 @@ export function PurchaseFlow({ onSuccess }: PurchaseFlowProps) {
     // Step 3: Pagamento
     const [clientSecret, setClientSecret] = useState<string | null>(null);
     const [loadingIntent, setLoadingIntent] = useState(false);
+    const [couponCode, setCouponCode] = useState("");
+    const [finalPrice, setFinalPrice] = useState<number | null>(null);
 
     // Fetch Palestre
     useEffect(() => {
@@ -82,7 +84,7 @@ export function PurchaseFlow({ onSuccess }: PurchaseFlowProps) {
         setStep(2);
     }, []);
 
-    const handleSelectPlan = useCallback(async (plan: TipoAbbonamento) => {
+    const handleSelectPlan = useCallback(async (plan: TipoAbbonamento, code?: string) => {
         if (!selectedGym || !user) return;
 
         setSelectedPlan(plan);
@@ -96,6 +98,7 @@ export function PurchaseFlow({ onSuccess }: PurchaseFlowProps) {
                     userid: user.id,
                     tipoid: plan.id,
                     strutturaid: selectedGym.id,
+                    couponCode: code
                 })
             });
 
@@ -103,6 +106,7 @@ export function PurchaseFlow({ onSuccess }: PurchaseFlowProps) {
                 const data = await res.json();
                 if (data._clientSecret) {
                     setClientSecret(data._clientSecret);
+                    setFinalPrice(data.importo);
                     setStep(3);
                 } else {
                     alert("Impossibile inizializzare il pagamento.");
@@ -110,16 +114,17 @@ export function PurchaseFlow({ onSuccess }: PurchaseFlowProps) {
             } else {
                 const err = await res.json();
                 alert(`Errore: ${err.error || "Impossibile elaborare la richiesta"}`);
-                setSelectedPlan(null); // Reset
+                // Non resettiamo selectedPlan se stiamo solo applicando un coupon errato in step 3
+                if (step !== 3) setSelectedPlan(null);
             }
         } catch (e) {
             console.error("Errore creazione checkout:", e);
             alert("Errore di rete durante la connessione con il sistema di pagamento.");
-            setSelectedPlan(null);
+            if (step !== 3) setSelectedPlan(null);
         } finally {
             setLoadingIntent(false);
         }
-    }, [selectedGym, user]);
+    }, [selectedGym, user, step]);
 
     return (
         <Card title="Acquista Abbonamento" className="animate-fadeIn">
@@ -225,9 +230,43 @@ export function PurchaseFlow({ onSuccess }: PurchaseFlowProps) {
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
                         <div>
                             <h3 style={{ fontSize: "1.1rem", fontWeight: 700 }}>3. Pagamento sicuro</h3>
-                            <p style={{ fontSize: "0.8rem", color: "hsl(var(--tf-text-muted))" }}>Piano: {selectedPlan.nome} - €{selectedPlan.prezzo.toFixed(2)}</p>
+                            <p style={{ fontSize: "0.8rem", color: "hsl(var(--tf-text-muted))" }}>
+                                Piano: {selectedPlan.nome} -
+                                {finalPrice && finalPrice < selectedPlan.prezzo ? (
+                                    <>
+                                        <span style={{ textDecoration: "line-through", marginRight: "0.5rem" }}>€{selectedPlan.prezzo.toFixed(2)}</span>
+                                        <span style={{ fontWeight: 800, color: "hsl(var(--tf-primary))" }}>€{finalPrice.toFixed(2)}</span>
+                                    </>
+                                ) : (
+                                    ` €${selectedPlan.prezzo.toFixed(2)}`
+                                )}
+                            </p>
                         </div>
                         <Button variant="ghost" size="sm" onClick={() => setStep(2)}>Annulla</Button>
+                    </div>
+
+                    {/* Coupon Section */}
+                    <div style={{
+                        marginBottom: "1.5rem", padding: "1rem", borderRadius: "var(--tf-radius-sm)",
+                        background: "hsl(var(--tf-surface-2))", border: "1px dashed hsl(var(--tf-border))",
+                        display: "flex", gap: "0.5rem", alignItems: "center"
+                    }}>
+                        <input
+                            placeholder="Codice Coupon"
+                            value={couponCode}
+                            onChange={e => setCouponCode(e.target.value)}
+                            style={{
+                                flex: 1, padding: "0.5rem", borderRadius: "var(--tf-radius-sm)",
+                                border: "1px solid hsl(var(--tf-border))", background: "white", fontSize: "0.875rem"
+                            }}
+                        />
+                        <Button
+                            size="sm"
+                            onClick={() => handleSelectPlan(selectedPlan, couponCode)}
+                            disabled={loadingIntent || !couponCode}
+                        >
+                            Applica
+                        </Button>
                     </div>
 
                     <Elements
@@ -249,7 +288,7 @@ export function PurchaseFlow({ onSuccess }: PurchaseFlowProps) {
                         }}
                     >
                         <CheckoutForm
-                            amount={selectedPlan.prezzo}
+                            amount={finalPrice ?? selectedPlan.prezzo}
                             onSuccess={onSuccess}
                             onError={(err) => console.error(err)}
                         />

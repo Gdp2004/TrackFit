@@ -41,6 +41,7 @@ export interface CoachWithUser {
     rating?: number;
     bio?: string;
     telefono?: string;
+    disponibilita?: SlotDisponibilita[];
     user: {
         id: string;
         email: string;
@@ -141,7 +142,7 @@ export interface Coupon {
     id: string;
     codice: string;                 // es. "PROMO2025"
     strutturaid: string;            // R4: valido solo per struttura specifica
-    tipoabbonamentoid: string;      // R4: valido solo per piano specifico
+    tipoabbonamentoid: string | null; // R4: valido solo per piano specifico (null = all)
     percentualesconto: number;      // R4: sconto percentuale (es. 50)
     monouso: boolean;               // R4: un solo utilizzo per utente
     scadenza: string;               // R4: data di scadenza (ISO date)
@@ -202,7 +203,8 @@ export interface Prenotazione {
     coachid?: string;
     corsoid?: string;
     strutturaid?: string;
-    dataora: string;
+    dataora: string; // ISO String
+    durata: number; // In minuti
     stato: StatoPrenotazioneEnum;
     importototale: number;
     rimborso?: number;

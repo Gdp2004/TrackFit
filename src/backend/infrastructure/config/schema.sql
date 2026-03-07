@@ -34,7 +34,8 @@ CREATE TABLE coaches (
     specializzazione TEXT,
     rating DECIMAL DEFAULT 0.0 CHECK (rating >= 0 AND rating <= 5),
     bio TEXT,
-    telefono TEXT
+    telefono TEXT,
+    disponibilita JSONB -- FR13: Orari di lavoro coach
 );
 
 -- Gestori Palestra
@@ -107,6 +108,7 @@ CREATE TABLE prenotazioni (
     corsoid UUID REFERENCES corsi(id) ON DELETE CASCADE,
     strutturaid UUID REFERENCES strutture(id) ON DELETE CASCADE,
     dataora TIMESTAMP WITH TIME ZONE NOT NULL,
+    durata INT NOT NULL DEFAULT 60, -- FR13: Durata in minuti
     stato prenotazione_stato_enum DEFAULT 'CONFERMATA',
     importototale DECIMAL NOT NULL,
     rimborso DECIMAL
@@ -136,7 +138,7 @@ CREATE TABLE abbonamenti (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     userid UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     strutturaid UUID REFERENCES strutture(id) ON DELETE SET NULL,
-    tipoid UUID,
+    tipoid UUID REFERENCES tipi_abbonamento(id) ON DELETE SET NULL,
     stato abbonamento_stato_enum DEFAULT 'ATTIVO',
     qrCode TEXT UNIQUE,
     datainizio TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -177,11 +179,13 @@ CREATE TABLE coupon (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     codice TEXT UNIQUE NOT NULL,
     strutturaid UUID NOT NULL REFERENCES strutture(id) ON DELETE CASCADE,
-    tipoabbonamentoid UUID NOT NULL,
+    tipoabbonamentoid UUID REFERENCES tipi_abbonamento(id) ON DELETE SET NULL,
+    descrizione TEXT,
     percentualesconto INT NOT NULL CHECK (percentualesconto > 0 AND percentualesconto <= 100),
     monouso BOOLEAN DEFAULT true,
     usato BOOLEAN DEFAULT false,
-    scadenza TIMESTAMP WITH TIME ZONE NOT NULL
+    scadenza TIMESTAMP WITH TIME ZONE NOT NULL,
+    createdat TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 -- Storico uso coupon (R4 per monouso)
@@ -432,7 +436,7 @@ BEGIN
     FROM pagamenti p
     JOIN abbonamenti a ON a.id = p.abbonamentoid
     WHERE a.strutturaid = p_struttura_id
-      AND p.stato = 'COMPLETATO'
+      AND p.stato IN ('COMPLETATO', 'IN_ATTESA')
       AND DATE_TRUNC('month', p.createdat) = DATE_TRUNC('month', NOW());
 
     RETURN json_build_object(

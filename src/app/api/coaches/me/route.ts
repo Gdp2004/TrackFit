@@ -25,6 +25,11 @@ const AggiornaProfiloSchema = z.object({
     specializzazione: z.string().min(1).optional(),
     bio: z.string().optional(),
     telefono: z.string().optional(),
+    disponibilita: z.array(z.object({
+        giornoSettimana: z.number().min(0).max(6),
+        oraInizio: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+        oraFine: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/),
+    })).optional(),
 });
 
 export async function GET(req: NextRequest) {

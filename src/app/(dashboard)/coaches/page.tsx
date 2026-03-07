@@ -72,6 +72,9 @@ export default function CoachesPage() {
                                 ...c.user,
                                 specializzazione: c.specializzazione,
                                 rating: c.rating,
+                                bio: c.bio,
+                                telefono: c.telefono,
+                                disponibilita: c.disponibilita,
                                 coachid: c.id
                             }}
                         />

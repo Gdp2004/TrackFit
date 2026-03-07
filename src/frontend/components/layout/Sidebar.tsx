@@ -40,6 +40,7 @@ const NAV_BY_ROLE: Record<RuoloEnum, NavItem[]> = {
     { href: "/gyms/abbonamenti", label: "Abbonamenti", icon: "💳" },
     { href: "/gyms/tipi-abbonamento", label: "Piani", icon: "📋" },
     { href: "/gyms/corsi", label: "Corsi", icon: "📆" },
+    { href: "/gyms/coaches", label: "Coach", icon: "💪" },
     { href: "/gyms/coupon", label: "Coupon", icon: "🎟️" },
   ],
   [RuoloEnum.ADMIN]: [

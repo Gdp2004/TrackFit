@@ -5,9 +5,10 @@ import { Badge } from "@frontend/components/ui/Badge";
 import { Button } from "@frontend/components/ui/Button";
 import { BookingModal } from "./BookingModal";
 import { ReviewSidebar } from "../shared/ReviewSidebar";
-import type { User } from "@backend/domain/model/types";
+import { CoachInfoModal } from "./CoachInfoModal";
+import type { User, SlotDisponibilita } from "@backend/domain/model/types";
 
-interface CoachCardProps { coach: User & { specializzazione?: string; rating?: number }; }
+interface CoachCardProps { coach: User & { specializzazione?: string; rating?: number; bio?: string; telefono?: string; disponibilita?: SlotDisponibilita[]; coachid?: string }; }
 
 function StarRating({ rating }: { rating?: number }) {
   if (!rating) return null;
@@ -30,12 +31,19 @@ const BG_COLORS = [
 export function CoachCard({ coach }: CoachCardProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [reviewOpen, setReviewOpen] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const idx = coach.id.charCodeAt(0) % BG_COLORS.length;
   const initials = `${coach.nome[0]}${coach.cognome[0]}`.toUpperCase();
 
   return (
     <>
-      <div className="tf-card" style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div
+        className="tf-card"
+        style={{ display: "flex", flexDirection: "column", gap: "1rem", cursor: "pointer", transition: "transform 0.2s" }}
+        onClick={() => setInfoOpen(true)}
+        onMouseOver={(e) => (e.currentTarget.style.transform = "translateY(-4px)")}
+        onMouseOut={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+      >
         {/* Avatar + info */}
         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
           <div style={{
@@ -63,15 +71,23 @@ export function CoachCard({ coach }: CoachCardProps) {
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem" }}>
-          <Button onClick={() => setModalOpen(true)} style={{ flex: 1 }}>
+          <Button
+            onClick={(e) => { e.stopPropagation(); setModalOpen(true); }}
+            style={{ flex: 1 }}
+          >
             🗓️ Prenota
           </Button>
-          <Button variant="secondary" onClick={() => setReviewOpen(true)} style={{ flex: 1 }}>
+          <Button
+            variant="secondary"
+            onClick={(e) => { e.stopPropagation(); setReviewOpen(true); }}
+            style={{ flex: 1 }}
+          >
             ⭐ Recensisci
           </Button>
         </div>
       </div>
 
+      <CoachInfoModal coach={coach} open={infoOpen} onClose={() => setInfoOpen(false)} />
       <BookingModal coach={coach} open={modalOpen} onClose={() => setModalOpen(false)} />
       <ReviewSidebar
         coachId={coach.coachid || coach.id}
@@ -82,3 +98,4 @@ export function CoachCard({ coach }: CoachCardProps) {
     </>
   );
 }
+

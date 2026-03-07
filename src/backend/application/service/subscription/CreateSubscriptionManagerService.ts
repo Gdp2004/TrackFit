@@ -37,7 +37,7 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
       const coupon = await this.couponRepo.findByCodice(couponCode);
       if (!coupon) throw new Error("Coupon non valido o inesistente.");
       if (new Date(coupon.scadenza) < new Date()) throw new Error("Coupon scaduto.");
-      if (coupon.tipoabbonamentoid !== tipoid) throw new Error("R4: Coupon non valido per questo tipo di abbonamento.");
+      if (coupon.tipoabbonamentoid && coupon.tipoabbonamentoid !== tipoid) throw new Error("R4: Coupon non valido per questo tipo di abbonamento.");
 
       // R4: Riscatto atomico coupon (previene Race Conditions su monouso o doppio click simultaneo)
       const redentoConSuccesso = await this.couponRepo.redeemCoupon(coupon.id, userid, coupon.monouso);
@@ -71,7 +71,7 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
     datafine.setMonth(datafine.getMonth() + durataMesi);
 
     // FR22: Persisti il pagamento nel DB
-    await this.paymentRepo.save({
+    const payment = await this.paymentRepo.save({
       userid,
       abbonamentoid: undefined, // verrà aggiornato dopo
       importo,
@@ -84,6 +84,7 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
 
     const abbonamento = await this.subRepo.save({
       userid,
+      strutturaid: tipo.strutturaid,
       tipoid,
       stato: StatoAbbonamentoEnum.ATTIVO,
       qrcode,
@@ -92,6 +93,9 @@ export class CreateSubscriptionManagerService implements SubscriptionManagementP
       importo,
       rinnovoautomatico: false, // default off
     });
+
+    // Collega l'abbonamento al pagamento
+    await this.paymentRepo.update(payment.id, { abbonamentoid: abbonamento.id });
 
     // R10: Audit creazione abbonamento
     await this.auditRepo.registra({

@@ -16,6 +16,13 @@ export class PaymentSupabaseAdapter implements PaymentRepositoryPort {
         return data as Pagamento;
     }
 
+    async update(id: string, pagamento: Partial<Pagamento>): Promise<Pagamento> {
+        const supabase = createSupabaseServerClient();
+        const { data, error } = await supabase.from("pagamenti").update(pagamento).eq("id", id).select().single();
+        if (error) throw new Error(`DB Error (update payment): ${error.message}`);
+        return data as Pagamento;
+    }
+
     async findById(id: string): Promise<Pagamento | null> {
         const supabase = createSupabaseServerClient();
         const { data, error } = await supabase.from("pagamenti").select("*").eq("id", id).single();

@@ -47,6 +47,7 @@ function exportCSV(rows: CouponRow[], strutturaNome: string) {
 export default function CouponPage() {
     const { loading } = useRoleRedirect(RuoloEnum.GESTORE);
     const [coupon, setCoupon] = useState<CouponRow[]>([]);
+    const [tipiAbbonamento, setTipiAbbonamento] = useState<{ id: string, nome: string }[]>([]);
     const [strutturaNome, setStrutturaNome] = useState("struttura");
     const [strutturaid, setStrutturaid] = useState<string | null>(null);
     const [loadingData, setLoadingData] = useState(true);
@@ -54,7 +55,14 @@ export default function CouponPage() {
     const [search, setSearch] = useState("");
     const [showModal, setShowModal] = useState(false);
     const [creating, setCreating] = useState(false);
-    const [newCoupon, setNewCoupon] = useState({ codice: "", descrizione: "", sconto: 10, monouso: true, scadenzaIl: "" });
+    const [newCoupon, setNewCoupon] = useState({
+        codice: "",
+        descrizione: "",
+        sconto: 10,
+        monouso: true,
+        scadenzaIl: "",
+        tipoabbonamentoid: ""
+    });
 
     function genCodice() {
         const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -70,13 +78,21 @@ export default function CouponPage() {
             id: c.id as string,
             codice: c.codice as string ?? "",
             descrizione: c.descrizione as string ?? "",
-            sconto: Number(c.sconto ?? 0),
+            sconto: Number(c.percentualesconto ?? c.sconto ?? 0),
             monouso: !!(c.monouso),
             stato: (c.stato as string ?? "ATTIVO").toUpperCase() as CouponRow["stato"],
             usatoDa: (c.usatoda as string) ?? undefined,
             usatoIl: (c.usatoil as string) ?? undefined,
-            scadenzaIl: (c.scadenzail as string) ?? undefined,
+            scadenzaIl: (c.scadenza as string ?? c.scadenzail as string) ?? undefined,
         })));
+    };
+
+    const fetchTipi = async (sid: string) => {
+        const res = await fetch(`/api/gyms/tipi-abbonamento?strutturaid=${sid}`);
+        if (res.ok) {
+            const data = await res.json();
+            setTipiAbbonamento(data?.data ?? data ?? []);
+        }
     };
 
     useEffect(() => {
@@ -89,7 +105,10 @@ export default function CouponPage() {
                 if (!s) return;
                 setStrutturaNome(s.denominazione ?? "struttura");
                 setStrutturaid(s.id);
-                await fetchCoupon(s.id);
+                await Promise.all([
+                    fetchCoupon(s.id),
+                    fetchTipi(s.id)
+                ]);
             } finally { setLoadingData(false); }
         };
         init();
@@ -97,20 +116,49 @@ export default function CouponPage() {
 
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!strutturaid) return;
+        if (!strutturaid || !newCoupon.tipoabbonamentoid) {
+            alert("Seleziona un tipo di abbonamento");
+            return;
+        }
         setCreating(true);
         try {
+            const payload = {
+                strutturaid,
+                codice: newCoupon.codice,
+                descrizione: newCoupon.descrizione,
+                percentualesconto: newCoupon.sconto,
+                monouso: newCoupon.monouso,
+                tipoabbonamentoid: newCoupon.tipoabbonamentoid === "ALL" ? null : newCoupon.tipoabbonamentoid,
+                scadenza: newCoupon.scadenzaIl ? new Date(newCoupon.scadenzaIl).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            };
+
             const res = await fetch("/api/gyms/coupon", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ strutturaid, ...newCoupon }),
+                body: JSON.stringify(payload),
             });
             if (res.ok) {
                 await fetchCoupon(strutturaid);
                 setShowModal(false);
-                setNewCoupon({ codice: "", descrizione: "", sconto: 10, monouso: true, scadenzaIl: "" });
+                setNewCoupon({ codice: "", descrizione: "", sconto: 10, monouso: true, scadenzaIl: "", tipoabbonamentoid: "" });
+            } else {
+                const errData = await res.json();
+                alert(JSON.stringify(errData.error || "Errore nella creazione"));
             }
         } finally { setCreating(false); }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Sei sicuro di voler eliminare questo coupon?")) return;
+        try {
+            const res = await fetch(`/api/gyms/coupon?id=${id}`, { method: "DELETE" });
+            if (res.ok) {
+                if (strutturaid) await fetchCoupon(strutturaid);
+            } else {
+                const errData = await res.json();
+                alert(errData.error || "Errore nell'eliminazione");
+            }
+        } catch (err) { alert(String(err)); }
     };
 
     if (loading || loadingData) return (
@@ -126,7 +174,7 @@ export default function CouponPage() {
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-            {/* Header */}
+            {/* Header omitted for brevity in replace, but keeping structure */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
                 <div>
                     <h1 style={{ fontSize: "1.5rem", fontWeight: 800, marginBottom: "0.25rem" }}>🎟️ Coupon</h1>
@@ -184,7 +232,7 @@ export default function CouponPage() {
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.875rem" }}>
                         <thead>
                             <tr style={{ background: "hsl(var(--tf-surface))", borderBottom: "1px solid hsl(var(--tf-border))" }}>
-                                {["Codice", "Descrizione", "Sconto", "Tipo", "Usato da", "Usato il", "Scadenza", "Stato"].map(h => (
+                                {["Codice", "Descrizione", "Sconto", "Tipo", "Usato da", "Usato il", "Scadenza", "Stato", ""].map(h => (
                                     <th key={h} style={{ padding: "0.75rem 1rem", textAlign: "left", fontWeight: 700, fontSize: "0.8rem", color: "hsl(var(--tf-text-muted))", whiteSpace: "nowrap" }}>{h}</th>
                                 ))}
                             </tr>
@@ -208,6 +256,15 @@ export default function CouponPage() {
                                     <td style={{ padding: "0.75rem 1rem" }}>
                                         <span style={{ padding: "0.25rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 700, background: STATO_COLOR[c.stato] + "22", color: STATO_COLOR[c.stato] }}>{c.stato}</span>
                                     </td>
+                                    <td style={{ padding: "0.75rem 1rem", textAlign: "right" }}>
+                                        <button
+                                            onClick={() => handleDelete(c.id)}
+                                            style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.1rem", padding: "0.2rem", color: "#f87171", transition: "transform 0.1s" }}
+                                            title="Elimina Coupon"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
@@ -227,6 +284,21 @@ export default function CouponPage() {
                                     <input style={inputSt} required value={newCoupon.codice} onChange={e => setNewCoupon(p => ({ ...p, codice: e.target.value.toUpperCase() }))} placeholder="PROMO24" />
                                     <button type="button" onClick={() => setNewCoupon(p => ({ ...p, codice: genCodice() }))} style={{ padding: "0 0.85rem", borderRadius: "var(--tf-radius-sm)", border: "1px solid hsl(var(--tf-border))", background: "hsl(var(--tf-bg))", cursor: "pointer", whiteSpace: "nowrap", fontSize: "0.8rem" }}>🎲 Random</button>
                                 </div>
+                            </div>
+                            <div>
+                                <label style={labelSt}>Tipo Abbonamento *</label>
+                                <select
+                                    style={inputSt}
+                                    required
+                                    value={newCoupon.tipoabbonamentoid}
+                                    onChange={e => setNewCoupon(p => ({ ...p, tipoabbonamentoid: e.target.value }))}
+                                >
+                                    <option value="">Seleziona...</option>
+                                    <option value="ALL">Tutti i tipi (All)</option>
+                                    {tipiAbbonamento.map(t => (
+                                        <option key={t.id} value={t.id}>{t.nome}</option>
+                                    ))}
+                                </select>
                             </div>
                             <div><label style={labelSt}>Descrizione</label><input style={inputSt} value={newCoupon.descrizione} onChange={e => setNewCoupon(p => ({ ...p, descrizione: e.target.value }))} placeholder="es. Sconto benvenuto" /></div>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>

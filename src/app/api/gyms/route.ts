@@ -41,6 +41,8 @@ const CreaCorsoSchema = z.object({
 const OnboardCoachSchema = z.object({
     strutturaid: z.string().uuid(),
     emailCoach: z.string().email(),
+    nome: z.string().min(1).optional(),
+    cognome: z.string().min(1).optional(),
 });
 
 // POST /api/gyms – Crea Struttura (FR5, ADMIN only – guard in middleware)
@@ -61,13 +63,15 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: msgs || "Dati non validi" }, { status: 400 });
             }
 
-            // L\'email del gestore è ricavata preferibilmente dal token, ma qui usiamo x-user-id come traccia
+            // L'email del gestore è ricavata preferibilmente dal token, ma qui usiamo x-user-id come traccia
             const tokenUtenteId = req.headers.get("x-user-id") || "SISTEMA";
 
             await service.onboardCoach(
                 parsed.data.strutturaid,
                 tokenUtenteId,
-                parsed.data.emailCoach
+                parsed.data.emailCoach,
+                parsed.data.nome,
+                parsed.data.cognome
             );
             return NextResponse.json({ message: "Coach creato e email inviata." }, { status: 201 });
         }

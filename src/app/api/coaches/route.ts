@@ -7,6 +7,7 @@ const PrenotaSchema = z.object({
   userid: z.string().uuid(),
   coachid: z.string().uuid(),
   dataora: z.string().datetime(),
+  durata: z.number().min(15).max(240).default(60),
 });
 
 // POST /api/coaches – prenota uno slot con il coach (UC7)
@@ -22,7 +23,8 @@ export async function POST(req: NextRequest) {
     const result = await service.prenotaSlotCoach(
       parsed.data.userid,
       parsed.data.coachid,
-      new Date(parsed.data.dataora)
+      new Date(parsed.data.dataora),
+      parsed.data.durata
     );
 
     return NextResponse.json(result, { status: 201 });

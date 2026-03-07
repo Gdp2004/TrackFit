@@ -12,11 +12,11 @@ export interface CoachRepositoryPort {
     findByUserId(userid: string): Promise<Coach | null>;
     findAll(): Promise<Coach[]>;
     findAllWithUserDetails(): Promise<CoachWithUser[]>;
-    findByStrutturaId(strutturaid: string): Promise<Coach[]>;
+    findByStrutturaId(strutturaid: string): Promise<CoachWithUser[]>;
     getStats(coachid: string): Promise<CoachStats>;
     savePrenotazione(prenotazione: Partial<Prenotazione>): Promise<Prenotazione>;
     findPrenotazioneById(id: string): Promise<Prenotazione | null>;         // R1: legge vecchia dataora
-    findPrenotazioneAttivaBySlot(coachid: string, dataora: Date): Promise<Prenotazione | null>;
+    findPrenotazioniAttiveInIntervallo(coachid: string, inizio: Date, fine: Date): Promise<Prenotazione[]>;
     findPrenotazioniByCoachId(coachid: string): Promise<Prenotazione[]>;
     updatePrenotazione(id: string, data: Partial<Prenotazione>): Promise<Prenotazione>;
     saveAuditLog(coachid: string, sessioneid: string, vecchiadataora: Date, nuovadataora: Date, motivazione: string): Promise<void>;

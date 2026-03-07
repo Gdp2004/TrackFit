@@ -77,29 +77,16 @@ export class SupabaseRealtimeNotificationAdapter implements NotificationServiceP
         console.info(`[Reminder] Programmato per userid=${userid} tra ${Math.round(msAllerta / 60000)} min`);
     }
 
-    // ─── Email via Nodemailer (SMTP) ─────────────────────────────────────────
+    // ─── Email Fittizia (Disabilitata per evitare errori SMTP) ────────────────
     async inviaEmail(
         destinatario: string,
         template: string,
         payload: Record<string, unknown>
     ): Promise<void> {
-        const transporter = nodemailer.createTransport({
-            host: process.env.SMTP_HOST,
-            port: Number(process.env.SMTP_PORT ?? 587),
-            auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
-            },
-        });
+        // Log degli invii invece del vero SMTP (richiesto dall'utente)
+        console.info(`[Fictitious Email] To: "${destinatario}" | Template: "${template}" | Content:`, payload);
 
-        // Template minimale – in produzione usa HTML con handlebars o react-email
-        await transporter.sendMail({
-            from: `"TrackFit" <${process.env.SMTP_USER}>`,
-            to: destinatario,
-            subject: `TrackFit – ${template}`,
-            text: JSON.stringify(payload, null, 2),
-        });
-
-        console.info(`[Email] Inviata template="${template}" a "${destinatario}"`);
+        // Simula ritardo di rete minimo
+        await new Promise(resolve => setTimeout(resolve, 100));
     }
 }

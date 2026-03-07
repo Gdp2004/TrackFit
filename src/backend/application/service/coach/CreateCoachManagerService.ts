@@ -25,18 +25,41 @@ export class CreateCoachManagerService implements CoachManagementPort {
   ) { }
 
   // ─── UC7/UC16: Prenotazione slot coach (con Pagamento) ──────────────────────
-  async prenotaSlotCoach(userid: string, coachid: string, dataora: Date): Promise<Prenotazione & { clientSecret?: string }> {
+  async prenotaSlotCoach(userid: string, coachid: string, dataora: Date, durata: number): Promise<Prenotazione & { clientSecret?: string }> {
     if (dataora <= new Date()) throw new Error("dataora deve essere nel futuro.");
 
-    const slotEsistente = await this.coachRepo.findPrenotazioneAttivaBySlot(coachid, dataora);
-    if (slotEsistente) throw new Error("Slot già occupato per questo coach.");
+    const fine = new Date(dataora.getTime() + durata * 60 * 1000);
 
-    const importo = 30.0; // Costo fisso per slot coach (esempio)
+    // Recupera dettaglio coach per orari (disponibilita)
+    const coach = await this.coachRepo.findById(coachid);
+    if (!coach) throw new Error("Coach non trovato.");
+
+    if (coach.disponibilita && coach.disponibilita.length > 0) {
+      const day = dataora.getDay(); // 0 = domenica
+      const startTimeStr = dataora.toTimeString().slice(0, 5); // "HH:MM inizio"
+      const endTimeStr = fine.toTimeString().slice(0, 5); // "HH:MM fine"
+
+      const isAvailable = coach.disponibilita.some(s =>
+        s.giornoSettimana === day &&
+        startTimeStr >= s.oraInizio &&
+        endTimeStr <= s.oraFine
+      );
+
+      if (!isAvailable) {
+        throw new Error("L'intervallo scelto non rientra pienamente negli orari di lavoro del coach.");
+      }
+    }
+
+    const collisioni = await this.coachRepo.findPrenotazioniAttiveInIntervallo(coachid, dataora, fine);
+    if (collisioni.length > 0) throw new Error("Lo slot è già parzialmente occupato da un'altra prenotazione.");
+
+    const importo = (durata / 60) * 30.0; // Costo proporzionale (es. 30€/ora)
 
     const prenotazione = await this.coachRepo.savePrenotazione({
       userid,
       coachid,
       dataora: dataora.toISOString(),
+      durata,
       stato: StatoPrenotazioneEnum.IN_ATTESA, // UC7: Wait for payment
       importototale: importo,
     });

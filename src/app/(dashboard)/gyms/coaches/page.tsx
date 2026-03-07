@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { useRoleRedirect } from "@frontend/hooks/useRoleRedirect";
 import { RuoloEnum } from "@backend/domain/model/enums";
-import type { Coach } from "@backend/domain/model/types";
+import type { Coach, CoachWithUser } from "@backend/domain/model/types";
 
 function StarRating({ rating }: { rating?: number }) {
     if (!rating) return null;
@@ -21,7 +21,9 @@ function StarRating({ rating }: { rating?: number }) {
     );
 }
 
-function CoachCard({ coach }: { coach: Coach }) {
+function CoachCard({ coach }: { coach: CoachWithUser }) {
+    const nomeCompleto = coach.user ? `${coach.user.nome} ${coach.user.cognome}` : "Coach";
+
     return (
         <div style={{
             padding: "1.25rem",
@@ -40,9 +42,9 @@ function CoachCard({ coach }: { coach: Coach }) {
                     💪
                 </div>
                 <div>
-                    <p style={{ fontWeight: 700, fontSize: "0.925rem" }}>{coach.specializzazione ?? "Coach"}</p>
-                    <p style={{ fontSize: "0.75rem", color: "hsl(var(--tf-text-muted))", fontFamily: "monospace" }}>
-                        ID: {coach.id.slice(0, 8)}…
+                    <p style={{ fontWeight: 700, fontSize: "0.925rem" }}>{nomeCompleto}</p>
+                    <p style={{ fontSize: "0.75rem", color: "hsl(var(--tf-text-muted))" }}>
+                        {coach.specializzazione ?? "Generale"}
                     </p>
                 </div>
             </div>
@@ -60,6 +62,8 @@ function OnboardModal({ strutturaid, onClose, onSuccess }: {
     onSuccess: () => void;
 }) {
     const [email, setEmail] = useState("");
+    const [nome, setNome] = useState("");
+    const [cognome, setCognome] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +75,12 @@ function OnboardModal({ strutturaid, onClose, onSuccess }: {
             const res = await fetch("/api/gyms?action=onboard-coach", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ strutturaid, emailCoach: email }),
+                body: JSON.stringify({
+                    strutturaid,
+                    emailCoach: email,
+                    nome: nome || undefined,
+                    cognome: cognome || undefined
+                }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error ?? "Errore");
@@ -94,12 +103,48 @@ function OnboardModal({ strutturaid, onClose, onSuccess }: {
                 background: "hsl(var(--tf-surface))",
                 border: "1px solid hsl(var(--tf-border))",
                 borderRadius: "var(--tf-radius)",
-                padding: "2rem", width: "100%", maxWidth: 400,
+                padding: "2rem", width: "100%", maxWidth: 450,
             }}>
                 <h2 style={{ fontWeight: 800, fontSize: "1.2rem", marginBottom: "1.25rem" }}>
                     + Aggiungi Coach
                 </h2>
                 <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                        <div>
+                            <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "hsl(var(--tf-text-muted))", display: "block", marginBottom: "0.4rem" }}>
+                                Nome
+                            </label>
+                            <input
+                                type="text" value={nome}
+                                onChange={e => setNome(e.target.value)}
+                                placeholder="Ees. Mario"
+                                style={{
+                                    width: "100%", padding: "0.65rem 0.85rem",
+                                    borderRadius: "var(--tf-radius-sm)",
+                                    border: "1px solid hsl(var(--tf-border))",
+                                    background: "hsl(var(--tf-bg))",
+                                    color: "hsl(var(--tf-text))", fontSize: "0.875rem",
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "hsl(var(--tf-text-muted))", display: "block", marginBottom: "0.4rem" }}>
+                                Cognome
+                            </label>
+                            <input
+                                type="text" value={cognome}
+                                onChange={e => setCognome(e.target.value)}
+                                placeholder="Ees. Rossi"
+                                style={{
+                                    width: "100%", padding: "0.65rem 0.85rem",
+                                    borderRadius: "var(--tf-radius-sm)",
+                                    border: "1px solid hsl(var(--tf-border))",
+                                    background: "hsl(var(--tf-bg))",
+                                    color: "hsl(var(--tf-text))", fontSize: "0.875rem",
+                                }}
+                            />
+                        </div>
+                    </div>
                     <div>
                         <label style={{ fontSize: "0.8rem", fontWeight: 600, color: "hsl(var(--tf-text-muted))", display: "block", marginBottom: "0.4rem" }}>
                             Email del nuovo Coach
@@ -118,7 +163,7 @@ function OnboardModal({ strutturaid, onClose, onSuccess }: {
                         />
                     </div>
                     <p style={{ fontSize: "0.76rem", color: "hsl(var(--tf-text-muted))" }}>
-                        ℹ️ Verrà creato un account e inviata una email con le credenziali temporanee.
+                        ℹ️ L'utente riceverà un invito via email per attivare l'account.
                     </p>
                     {error && (
                         <p style={{ padding: "0.6rem", borderRadius: "6px", background: "hsl(var(--tf-danger)/.1)", color: "hsl(var(--tf-danger))", fontSize: "0.8rem" }}>
@@ -152,7 +197,7 @@ function OnboardModal({ strutturaid, onClose, onSuccess }: {
 
 export default function GymCoachesPage() {
     const { loading } = useRoleRedirect(RuoloEnum.GESTORE);
-    const [coaches, setCoaches] = useState<Coach[]>([]);
+    const [coaches, setCoaches] = useState<CoachWithUser[]>([]);
     const [strutturaid, setStrutturaid] = useState<string | null>(null);
     const [loadingData, setLoadingData] = useState(true);
     const [onboardOpen, setOnboardOpen] = useState(false);

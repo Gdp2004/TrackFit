@@ -4,7 +4,7 @@
 // ============================================================
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRoleRedirect } from "@frontend/hooks/useRoleRedirect";
 import { RuoloEnum } from "@backend/domain/model/enums";
 import type { SlotDisponibilita } from "@backend/domain/model/types";
@@ -84,12 +84,39 @@ function SlotRow({ slot, onRemove, onChange }: {
 }
 
 export default function DisponibilitaPage() {
-    const { loading } = useRoleRedirect(RuoloEnum.COACH);
-    const [slots, setSlots] = useState<SlotDisponibilita[]>(ORE_DEFAULT);
+    const { loading: roleLoading } = useRoleRedirect(RuoloEnum.COACH);
+    const [slots, setSlots] = useState<SlotDisponibilita[]>([]);
+    const [fetching, setFetching] = useState(true);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
-    if (loading) return null;
+    useEffect(() => {
+        const fetchCurrentDisponibilita = async () => {
+            try {
+                const res = await fetch("/api/coaches/me");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.coach?.disponibilita) {
+                        setSlots(data.coach.disponibilita);
+                    }
+                }
+            } catch (err) {
+                console.error("Errore fetch disponibilita:", err);
+            } finally {
+                setFetching(false);
+            }
+        };
+
+        if (!roleLoading) {
+            fetchCurrentDisponibilita();
+        }
+    }, [roleLoading]);
+
+    if (roleLoading || fetching) return (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "200px", color: "hsl(var(--tf-text-muted))" }}>
+            Caricamento disponibilità in corso...
+        </div>
+    );
 
     const addSlot = () => {
         setSlots(prev => [...prev, { giornoSettimana: 1, oraInizio: "09:00", oraFine: "17:00" }]);

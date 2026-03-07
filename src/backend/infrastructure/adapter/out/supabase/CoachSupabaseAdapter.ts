@@ -58,11 +58,14 @@ export class CoachSupabaseAdapter implements CoachRepositoryPort {
         return (data ?? []) as CoachWithUser[];
     }
 
-    async findByStrutturaId(strutturaid: string): Promise<Coach[]> {
+    async findByStrutturaId(strutturaid: string): Promise<CoachWithUser[]> {
         const supabase = createSupabaseServerClient();
-        const { data, error } = await supabase.from("coaches").select("*").eq("strutturaid", strutturaid);
+        const { data, error } = await supabase
+            .from("coaches")
+            .select("*, user:users!userid(*)")
+            .eq("strutturaid", strutturaid);
         if (error) return [];
-        return (data ?? []) as Coach[];
+        return (data ?? []) as CoachWithUser[];
     }
 
     async getStats(coachid: string): Promise<CoachStats> {
@@ -88,16 +91,33 @@ export class CoachSupabaseAdapter implements CoachRepositoryPort {
         return error ? null : data as Prenotazione;
     }
 
-    async findPrenotazioneAttivaBySlot(coachid: string, dataora: Date): Promise<Prenotazione | null> {
+    async findPrenotazioniAttiveInIntervallo(coachid: string, inizio: Date, fine: Date): Promise<Prenotazione[]> {
         const supabase = createSupabaseServerClient();
+
+        // Per semplicità e precisione, recuperiamo le prenotazioni del giorno e filtriamo l'overlap
+        const giornoInizio = new Date(inizio);
+        giornoInizio.setHours(0, 0, 0, 0);
+        const giornoFine = new Date(inizio);
+        giornoFine.setHours(23, 59, 59, 999);
+
         const { data, error } = await supabase.from("prenotazioni")
             .select("*")
             .eq("coachid", coachid)
-            .eq("dataora", dataora.toISOString())
-            .eq("stato", StatoPrenotazioneEnum.CONFERMATA)
-            .single();
-        if (error) return null;
-        return data as Prenotazione;
+            .in("stato", [StatoPrenotazioneEnum.CONFERMATA, StatoPrenotazioneEnum.IN_ATTESA])
+            .gte("dataora", giornoInizio.toISOString())
+            .lte("dataora", giornoFine.toISOString());
+
+        if (error || !data) return [];
+
+        // Filtro overlap in memoria
+        return (data as Prenotazione[]).filter(p => {
+            const pInizio = new Date(p.dataora).getTime();
+            const pFine = pInizio + (p.durata * 60 * 1000);
+            const reqInizio = inizio.getTime();
+            const reqFine = fine.getTime();
+
+            return (pInizio < reqFine && pFine > reqInizio);
+        });
     }
 
     async findPrenotazioniByCoachId(coachid: string): Promise<Prenotazione[]> {

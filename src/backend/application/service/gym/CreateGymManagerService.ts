@@ -11,7 +11,7 @@ import { CoachRepositoryPort } from "@/backend/domain/port/out/CoachRepositoryPo
 import { SubscriptionRepositoryPort } from "@/backend/domain/port/out/SubscriptionRepositoryPort";
 import { NotificationServicePort } from "@/backend/domain/port/out/NotificationServicePort";
 import { AuditLogRepositoryPort } from "@/backend/domain/port/out/AuditLogRepositoryPort";
-import { Struttura, Corso, Prenotazione, Coach, TipoAbbonamento, GestoreStats } from "@/backend/domain/model/types";
+import { Struttura, Corso, Prenotazione, Coach, CoachWithUser, TipoAbbonamento, GestoreStats } from "@/backend/domain/model/types";
 import { StatoAbbonamentoEnum, StatoPrenotazioneEnum, RuoloEnum } from "@/backend/domain/model/enums";
 import { createSupabaseServerClient } from "@/backend/infrastructure/config/supabase";
 
@@ -76,51 +76,88 @@ export class CreateGymManagerService implements GymManagementPort {
   }
 
   // ─── UC2: Onboarding Coach ──────────────────────────────────────────────────
-  async onboardCoach(strutturaid: string, emailGestore: string, emailCoach: string): Promise<void> {
+  async onboardCoach(
+    strutturaid: string,
+    emailGestore: string,
+    emailCoach: string,
+    nomeCoach?: string,
+    cognomeCoach?: string
+  ): Promise<void> {
     const supabase = createSupabaseServerClient();
 
-    // 1. Create User in Supabase Auth (Auto-confirm to allow immediate access)
-    // Note: In real production, we'd send a reset-password email. For this demo we set a random pass.
-    const tempPassword = Math.random().toString(36).slice(-8) + "A1!";
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: emailCoach,
-      password: tempPassword,
-      email_confirm: true,
-      user_metadata: { nome: "Nuovo", cognome: "Coach", ruolo: RuoloEnum.COACH },
-    });
+    let userId: string;
+    let isNewUser = false;
+    let inviteData: any = null;
+    let existingProfile: any = null;
+    let existingCoach: any = null;
 
-    if (authError) {
-      if (authError.message.includes("already registered")) {
-        throw new Error("L'utente con questa email esiste già.");
+    // 1. Controlliamo se l'utente esiste già nel sistema
+    const { data: userData } = await supabase
+      .from("users")
+      .select("id, nome, cognome, ruolo")
+      .eq("email", emailCoach)
+      .single();
+
+    if (userData) {
+      userId = userData.id;
+      existingProfile = userData;
+
+      // 2. REGOLE BUSINESS: Se è già un Coach, non possiamo associarlo automaticamente
+      if (userData.ruolo === RuoloEnum.COACH) {
+        throw new Error("L'utente è già registrato come Coach. Per associarlo a una nuova struttura, contatta il SuperAdmin.");
       }
-      throw new Error(`Errore creazione account: ${authError.message}`);
+    } else {
+      // 3. Se non esiste affatto, mandiamo il link di INVITO (questo crea l'account Auth)
+      const { data, error: inviteError } = await supabase.auth.admin.generateLink({
+        type: 'invite',
+        email: emailCoach,
+        options: { redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback` }
+      });
+
+      if (inviteError) {
+        throw new Error(`Errore invio invito: ${inviteError.message}`);
+      }
+
+      userId = data.user.id;
+      inviteData = data;
+      isNewUser = true;
     }
 
-    const userId = authData.user.id;
+    // 4. Upsert Profilo Pubblico (assicura ruolo COACH e campi obbligatori)
+    const { error: profileError } = await supabase.from("users").upsert({
+      id: userId,
+      email: emailCoach,
+      nome: isNewUser ? (nomeCoach ?? "Nuovo") : (existingProfile?.nome ?? nomeCoach ?? "Nuovo"),
+      cognome: isNewUser ? (cognomeCoach ?? "Coach") : (existingProfile?.cognome ?? cognomeCoach ?? "Coach"),
+      ruolo: RuoloEnum.COACH
+    });
 
-    // 2. Add Coach entity mapped to Struttura
-    const { error: coachError } = await supabase.from("coaches").insert({
+    if (profileError) {
+      throw new Error(`Errore aggiornamento profilo utente: ${profileError.message}`);
+    }
+
+    // 4. Add Coach entity mapped to Struttura (UPSERT per ri-associare)
+    const { error: coachError } = await supabase.from("coaches").upsert({
       userid: userId,
       strutturaid,
       specializzazione: "Generale",
       rating: 5.0
-    });
+    }, { onConflict: 'userid' });
 
     if (coachError) {
-      // Rollback auth user
-      await supabase.auth.admin.deleteUser(userId);
-      throw new Error("Errore associazione coach alla struttura.");
+      throw new Error(`Errore associazione coach alla struttura: ${coachError.message}`);
     }
 
-    // 3. Send Onboarding Email (UC2 Step 6)
-    await this.notificationService.inviaEmail(
-      emailCoach,
-      "Benvenuto in TrackFit! Il tuo account Coach è pronto",
-      {
-        messaggio: `Sei stato invitato come Coach. Accedi con la tua email e la password temporanea: ${tempPassword}. Ricordati di cambiarla al primo accesso!`,
-        strutturaid
-      }
-    );
+    // 5. Invia Email differenziata (UC2 Step 6)
+    const emailSubject = isNewUser
+      ? "Benvenuto in TrackFit! Completa la tua registrazione"
+      : "Nuova associazione struttura palestra";
+
+    const emailBody = isNewUser
+      ? `Sei stato invitato come Coach nella nostra struttura. Clicca su questo link per attivare il tuo account: ${inviteData?.properties?.action_link}`
+      : `Il tuo account Coach è stato associato correttamente alla nuova struttura della palestra. Ora puoi gestire i tuoi atleti da lì.`;
+
+    await this.notificationService.inviaEmail(emailCoach, emailSubject, { messaggio: emailBody, strutturaid });
 
     // 4. Register Audit Log (UC2 Step 7)
     await this.auditRepo.registra({
@@ -277,7 +314,7 @@ export class CreateGymManagerService implements GymManagementPort {
     return this.gymRepo.getStats(strutturaid);
   }
 
-  async getCoachesStruttura(strutturaid: string): Promise<Coach[]> {
+  async getCoachesStruttura(strutturaid: string): Promise<CoachWithUser[]> {
     if (this.coachRepo) return this.coachRepo.findByStrutturaId(strutturaid);
     return [];
   }
