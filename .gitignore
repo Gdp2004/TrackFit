@@ -6,5 +6,10 @@ node_modules/
 # ===== VARIABILI D'AMBIENTE (Configurazione e Segreti) =====
 .env
 .env.local
+
+# ===== ARTEFATTI GENERATI (Build e Cache) =====
+*.tsbuildinfo
+.DS_Store
+Thumbs.db
 .env.*.local
 env.local
