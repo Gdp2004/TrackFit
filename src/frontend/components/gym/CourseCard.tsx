@@ -36,7 +36,6 @@ export function CourseCard({ corso, onBook, loading }: CourseCardProps) {
                 variant={pieno ? "ghost" : "primary"}
                 onClick={() => onBook(corso.id)}
                 isLoading={loading}
-                disabled={pieno}
             >
                 {pieno ? "Lista attesa" : "Prenota"}
             </Button>

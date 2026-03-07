@@ -1,0 +1,41 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - img [ref=e4]
+      - heading "TrackFit" [level=1] [ref=e6]
+    - generic [ref=e8]:
+      - img "TrackFit logo" [ref=e10]
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - heading "Bentornato 👋" [level=2] [ref=e13]
+          - paragraph [ref=e14]: Accedi al tuo account TrackFit
+        - generic [ref=e15]:
+          - generic [ref=e16]:
+            - generic [ref=e17]: Email
+            - generic [ref=e18]:
+              - generic: ✉️
+              - textbox "Email" [ref=e19]:
+                - /placeholder: tuaemail@esempio.it
+                - text: gestore_booking_1772898658644@trackfit.it
+          - generic [ref=e20]:
+            - generic [ref=e21]: Password
+            - generic [ref=e22]:
+              - generic: 🔒
+              - textbox "Password" [ref=e23]:
+                - /placeholder: ••••••••
+                - text: Password123!
+          - paragraph [ref=e24]: ⚠️ Invalid login credentials
+          - link "Password dimenticata?" [ref=e26] [cursor=pointer]:
+            - /url: /forgot-password
+          - button "Accedi" [ref=e27] [cursor=pointer]
+        - paragraph [ref=e28]:
+          - text: Non hai un account?
+          - link "Registrati" [ref=e29] [cursor=pointer]:
+            - /url: /register
+  - button "Open Next.js Dev Tools" [ref=e35] [cursor=pointer]:
+    - img [ref=e36]
+  - alert [ref=e39]
+```

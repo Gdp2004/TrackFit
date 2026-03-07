@@ -1,0 +1,40 @@
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › tests\e2e\booking.spec.ts:12:9 › Prenotazione Corsi e Lista d'attesa (TC_4, TC_5) › Flusso completo: creazione corso, prenotazione e lista d'attesa (21.6s)
+
+
+  1) [chromium] › tests\e2e\booking.spec.ts:12:9 › Prenotazione Corsi e Lista d'attesa (TC_4, TC_5) › Flusso completo: creazione corso, prenotazione e lista d'attesa 
+
+    Error: [2mexpect([22m[31mlocator[39m[2m).[22mtoContainText[2m([22m[32mexpected[39m[2m)[22m failed
+
+    Locator: locator('h1, h2')
+    Timeout: 20000ms
+    [32m- Expected  - 1[39m
+    [31m+ Received  + 1[39m
+
+    [2m  Array [[22m
+    [32m-   /Dashboard/i,[39m
+    [31m+   "TrackFit",[39m
+    [2m    "Bentornato 👋",[22m
+    [2m  ][22m
+
+    Call log:
+    [2m  - Expect "toContainText" with timeout 20000ms[22m
+    [2m  - waiting for locator('h1, h2')[22m
+    [2m    23 × locator resolved to 2 elements[22m
+
+
+      29 |         await setupPage.fill('input#password', 'Password123!');
+      30 |         await setupPage.click('button[type="submit"]');
+    > 31 |         await expect(setupPage.locator('h1, h2')).toContainText([/Dashboard/i, /Bentornato/i], { timeout: 20000 });
+         |                                                   ^
+      32 |
+      33 |         // Crea Struttura
+      34 |         await setupPage.goto('/gyms/struttura');
+        at C:\Users\gdpal\TrackFit\tests\e2e\booking.spec.ts:31:51
+
+    Error Context: test-results\booking-Prenotazione-Corsi-c8a14-enotazione-e-lista-d-attesa-chromium\error-context.md
+
+  1 failed
+    [chromium] › tests\e2e\booking.spec.ts:12:9 › Prenotazione Corsi e Lista d'attesa (TC_4, TC_5) › Flusso completo: creazione corso, prenotazione e lista d'attesa 
