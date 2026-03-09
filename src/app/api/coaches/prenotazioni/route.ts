@@ -47,7 +47,8 @@ export async function POST(req: NextRequest) {
         const prenotazione = await service.prenotaSlotCoach(
             parsed.data.userid,
             parsed.data.coachid,
-            new Date(parsed.data.dataora)
+            new Date(parsed.data.dataora),
+            60 // durata di default in minuti
         );
 
         return NextResponse.json(prenotazione, { status: 201 });

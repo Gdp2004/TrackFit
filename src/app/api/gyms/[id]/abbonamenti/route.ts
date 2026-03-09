@@ -46,10 +46,17 @@ export async function GET(
         // Filter and map abbonamenti to match the expected format
         const finalData = (data || [])
             .filter(a => tipiMap.has(a.tipoid)) // Only include abbonamenti for this specific gym (based on the tipo's strutturaid)
-            .map(a => ({
-                ...a,
-                tipo: tipiMap.get(a.tipoid) || null
-            }));
+            .map(a => {
+                const tipo = tipiMap.get(a.tipoid) || null;
+                // If there is an explicit 'importo' on the abbonamento (from a discounted purchase), use it.
+                // Otherwise fallback to the base price.
+                const price = a.importo !== undefined && a.importo !== null ? Number(a.importo) : (tipo?.prezzo ? Number(tipo.prezzo) : 0);
+
+                return {
+                    ...a,
+                    tipo: tipo ? { ...tipo, prezzo: price } : null
+                };
+            });
 
         return NextResponse.json({ data: finalData });
     } catch (err: unknown) {
