@@ -205,7 +205,7 @@ export class CreateCoachManagerService implements CoachManagementPort {
     const atleta = await this.userRepo.findById(atletaId);
     if (!atleta) throw new Error("Atleta non trovato");
     if (atleta.coachid && atleta.coachid !== coachId) throw new Error("L'atleta non è nel tuo roster diretto");
-    await this.userRepo.update(atletaId, { coachid: undefined as any });
+    await this.userRepo.update(atletaId, { coachid: null as any });
     await this.auditRepo.registra({
       utenteId: coachId,
       azione: "RIMOZIONE_ATLETA_ROSTER",
