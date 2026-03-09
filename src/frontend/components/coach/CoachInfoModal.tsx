@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Modal } from "@frontend/components/ui/Modal";
 import { Badge } from "@frontend/components/ui/Badge";
 import type { User, SlotDisponibilita } from "@backend/domain/model/types";
@@ -15,6 +16,53 @@ const BG_COLORS = [
     "linear-gradient(135deg,hsl(38 100% 55%),hsl(25 95% 45%))",
     "linear-gradient(135deg,hsl(20 85% 45%),hsl(10 80% 35%))",
 ];
+
+function CopyButton({ text }: { text: string }) {
+    const [copied, setCopied] = useState(false);
+
+    const handleCopy = async (e: React.MouseEvent) => {
+        e.stopPropagation();
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error("Failed to copy!", err);
+        }
+    };
+
+    return (
+        <button
+            onClick={handleCopy}
+            title="Copia negli appunti"
+            style={{
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: "var(--tf-radius-sm)",
+                padding: "0.25rem 0.5rem",
+                cursor: "pointer",
+                color: copied ? "hsl(var(--tf-success))" : "hsl(var(--tf-text-muted))",
+                fontSize: "0.7rem",
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                transition: "all 0.2s",
+                marginLeft: "auto"
+            }}
+            onMouseEnter={e => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.1)";
+                e.currentTarget.style.color = copied ? "hsl(var(--tf-success))" : "hsl(var(--tf-text))";
+            }}
+            onMouseLeave={e => {
+                e.currentTarget.style.background = "rgba(255,255,255,0.05)";
+                e.currentTarget.style.color = copied ? "hsl(var(--tf-success))" : "hsl(var(--tf-text-muted))";
+            }}
+        >
+            {copied ? "✓ Copiato!" : "📋 Copia"}
+        </button>
+    );
+}
 
 export function CoachInfoModal({ coach, open, onClose }: CoachInfoModalProps) {
     const idx = coach.id.charCodeAt(0) % BG_COLORS.length;
@@ -74,6 +122,7 @@ export function CoachInfoModal({ coach, open, onClose }: CoachInfoModalProps) {
                             📧
                         </div>
                         <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "hsl(var(--tf-text))" }}>{coach.email}</span>
+                        <CopyButton text={coach.email} />
                     </div>
                     {coach.telefono && (
                         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
@@ -81,6 +130,7 @@ export function CoachInfoModal({ coach, open, onClose }: CoachInfoModalProps) {
                                 📞
                             </div>
                             <span style={{ fontSize: "0.9rem", fontWeight: 500, color: "hsl(var(--tf-text))" }}>{coach.telefono}</span>
+                            <CopyButton text={coach.telefono} />
                         </div>
                     )}
                 </div>

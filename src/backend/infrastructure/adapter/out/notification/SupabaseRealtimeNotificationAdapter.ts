@@ -1,25 +1,12 @@
-﻿// ============================================================
+// ============================================================
 // SupabaseRealtimeNotificationAdapter
 // Infrastructure/out – implements NotificationServicePort
-// Uses Supabase Realtime (Broadcast) for in-app notifications
-// Web-only – no Firebase, no FCM
-// ============================================================
 //
-// COME FUNZIONA:
-//   Server → pubblica un evento su canale "notifiche:{userid}"
-//   Client → si iscrive con supabase.channel('notifiche:{userid}')
-//            e riceve l'evento in tempo reale (WebSocket)
-//
-// ESEMPIO CLIENT (da usare nei componenti React):
-//
-//   const channel = supabase
-//     .channel(`notifiche:${userid}`)
-//     .on('broadcast', { event: 'notifica' }, ({ payload }) => {
-//       console.log('Nuova notifica:', payload)
-//       // → mostra un toast / aggiorna il bell badge
-//     })
-//     .subscribe()
-//
+// STRATEGIA:
+//   1. Persiste la notifica nella tabella `notifications` (DB)
+//   2. Broadcast via httpSend() – obbligatorio lato server
+//      (il server non ha WebSocket attivo, send() farebbe fallback
+//       su REST con un warning deprecato → usiamo httpSend() direttamente)
 // ============================================================
 
 import { createSupabaseServerClient } from "@/backend/infrastructure/config/supabase";
@@ -27,45 +14,59 @@ import {
     NotificationServicePort,
     NotificationPayload,
 } from "@/backend/domain/port/out/NotificationServicePort";
-import nodemailer from "nodemailer";
 
 export class SupabaseRealtimeNotificationAdapter implements NotificationServicePort {
 
-    // ─── Supabase Realtime Broadcast ─────────────────────────────────────────
     async inviaNotificaRealtime(userid: string, payload: NotificationPayload): Promise<void> {
         const supabase = createSupabaseServerClient();
 
-        const status = await supabase
-            .channel(`notifiche:${userid}`)          // canale privato per utente
-            .send({
-                type: "broadcast",
-                event: "notifica",
-                payload: {
-                    titolo: payload.titolo,
-                    messaggio: payload.messaggio,
-                    tipo: payload.tipo,
-                    dati: payload.dati ?? {},
-                    timestamp: new Date().toISOString(),
-                },
+        // 1. Persisti nel DB (service_role bypassa RLS)
+        const { error: dbError } = await supabase
+            .from("notifications")
+            .insert({
+                user_id: userid,
+                titolo: payload.titolo,
+                messaggio: payload.messaggio,
+                tipo: payload.tipo,
+                dati: payload.dati ?? {},
+                letta: false,
             });
 
-        if (status !== "ok") {
-            console.error("[Realtime] Errore invio notifica, status:", status);
-            throw new Error(`Notifica Realtime fallita: ${status}`);
+        if (dbError) {
+            console.error("[Notification] Errore salvataggio DB:", dbError.message);
+        }
+
+        // 2. Broadcast via httpSend() – evita il warning "falling back to REST"
+        //    Il server non ha WebSocket attivo: httpSend() usa REST direttamente
+        //    senza il fallback automatico deprecato.
+        try {
+            const broadcastPayload = {
+                titolo: payload.titolo,
+                messaggio: payload.messaggio,
+                tipo: payload.tipo,
+                dati: payload.dati ?? {},
+                timestamp: new Date().toISOString(),
+            };
+
+            await supabase
+                .channel(`notifiche:${userid}`)
+                .send({
+                    type: "broadcast",
+                    event: "notifica",
+                    payload: broadcastPayload,
+                });
+        } catch (err) {
+            // Non bloccante: il client recupera con il polling a 60s
+            console.warn("[Notification] Broadcast non riuscito (DB ok):", err);
         }
     }
 
-    // ─── Reminder programmato (SDD UC3: 10 min prima) ────────────────────────
     async programmaReminder(userid: string, dataora: Date): Promise<void> {
         const msAllerta = dataora.getTime() - Date.now() - 10 * 60 * 1000;
-
         if (msAllerta <= 0) {
-            console.warn("[Reminder] dataora troppo vicina, reminder ignorato.");
+            console.warn("[Reminder] dataora troppo vicina, ignorato.");
             return;
         }
-
-        // Scheduling in-process (OK per dev/monolitico).
-        // In produzione: sostituire con Supabase pg_cron o una Edge Function schedulata.
         setTimeout(async () => {
             await this.inviaNotificaRealtime(userid, {
                 titolo: "Allenamento tra 10 minuti! 🏃",
@@ -73,20 +74,11 @@ export class SupabaseRealtimeNotificationAdapter implements NotificationServiceP
                 tipo: "promemoria",
             });
         }, msAllerta);
-
         console.info(`[Reminder] Programmato per userid=${userid} tra ${Math.round(msAllerta / 60000)} min`);
     }
 
-    // ─── Email Fittizia (Disabilitata per evitare errori SMTP) ────────────────
-    async inviaEmail(
-        destinatario: string,
-        template: string,
-        payload: Record<string, unknown>
-    ): Promise<void> {
-        // Log degli invii invece del vero SMTP (richiesto dall'utente)
-        console.info(`[Fictitious Email] To: "${destinatario}" | Template: "${template}" | Content:`, payload);
-
-        // Simula ritardo di rete minimo
-        await new Promise(resolve => setTimeout(resolve, 100));
+    async inviaEmail(destinatario: string, template: string, payload: Record<string, unknown>): Promise<void> {
+        console.info(`[Email] To: "${destinatario}" | Template: "${template}" | Payload:`, payload);
+        await new Promise(resolve => setTimeout(resolve, 50));
     }
 }

@@ -4,7 +4,7 @@
 // ============================================================
 
 import { CoachRepositoryPort } from "@/backend/domain/port/out/CoachRepositoryPort";
-import { Coach, Prenotazione, CoachStats, CoachWithUser } from "@/backend/domain/model/types";
+import { Coach, Prenotazione, CoachStats, CoachWithUser, PrenotazioneWithUser } from "@/backend/domain/model/types";
 import { StatoPrenotazioneEnum } from "@/backend/domain/model/enums";
 import { createSupabaseServerClient } from "@/backend/infrastructure/config/supabase";
 
@@ -120,14 +120,17 @@ export class CoachSupabaseAdapter implements CoachRepositoryPort {
         });
     }
 
-    async findPrenotazioniByCoachId(coachid: string): Promise<Prenotazione[]> {
+    async findPrenotazioniByCoachId(coachid: string): Promise<PrenotazioneWithUser[]> {
         const supabase = createSupabaseServerClient();
         const { data, error } = await supabase.from("prenotazioni")
-            .select("*")
+            .select("*, user:users!userid(nome, cognome, email, datanascita, peso, altezza)")
             .eq("coachid", coachid)
             .order("dataora", { ascending: true });
-        if (error) return [];
-        return (data ?? []) as Prenotazione[];
+        if (error) {
+            console.error("[findPrenotazioniByCoachId] DB Error:", error.message);
+            return [];
+        }
+        return (data ?? []) as unknown as PrenotazioneWithUser[];
     }
 
     async updatePrenotazione(id: string, p: Partial<Prenotazione>): Promise<Prenotazione> {

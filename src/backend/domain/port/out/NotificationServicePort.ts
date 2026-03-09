@@ -7,7 +7,7 @@
 export interface NotificationPayload {
     titolo: string;
     messaggio: string;
-    tipo: "promemoria" | "modifica_piano" | "conferma" | "lista_attesa" | "cancellazione";
+    tipo: "promemoria" | "modifica_piano" | "conferma" | "lista_attesa" | "cancellazione" | "annullamento_piano";
     dati?: Record<string, unknown>;
 }
 

@@ -210,6 +210,17 @@ export interface Prenotazione {
     rimborso?: number;
 }
 
+export interface PrenotazioneWithUser extends Prenotazione {
+    user: {
+        nome: string;
+        cognome: string;
+        email: string;
+        datanascita?: string;
+        peso?: number;
+        altezza?: number;
+    };
+}
+
 // ─── Audit / Reports ─────────────────────────────────────────
 /** Log modifiche del coach al piano atleta (R1 obbligatorio) */
 export interface AuditLog {

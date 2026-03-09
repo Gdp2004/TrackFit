@@ -27,6 +27,11 @@ const ModificaSlotSchema = z.object({
     motivazione: z.string().min(1),
 });
 
+const AnnullaSlotSchema = z.object({
+    sessioneid: z.string().uuid(),
+    motivazione: z.string().min(1),
+});
+
 export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -65,6 +70,34 @@ export async function PUT(
             parsed.data.motivazione
         );
         return NextResponse.json({ message: "Sessione aggiornata." });
+    } catch (err: unknown) {
+        return NextResponse.json({ error: String(err) }, { status: 400 });
+    }
+}
+
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const { id: coachid } = await params;
+    const requesterId = req.headers.get("x-user-id");
+    if (!requesterId) return NextResponse.json({ error: "Non autenticato." }, { status: 401 });
+
+    try {
+        const { searchParams } = new URL(req.url);
+        const sessioneid = searchParams.get("sessioneid");
+        const motivazione = searchParams.get("motivazione");
+
+        const parsed = AnnullaSlotSchema.safeParse({ sessioneid, motivazione });
+        if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+
+        const service = buildService();
+        await service.annullaSessione(
+            coachid,
+            parsed.data.sessioneid,
+            parsed.data.motivazione
+        );
+        return NextResponse.json({ message: "Sessione annullata." });
     } catch (err: unknown) {
         return NextResponse.json({ error: String(err) }, { status: 400 });
     }
