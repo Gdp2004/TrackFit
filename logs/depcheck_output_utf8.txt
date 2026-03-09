@@ -1,0 +1,18 @@
+﻿Unused dependencies
+* @tmcw/togeojson
+* date-fns
+* nodemailer
+Unused devDependencies
+* @types/jest
+* @types/nodemailer
+* eslint
+* eslint-config-next
+* jest-environment-node
+* ts-jest
+Missing dependencies
+* @frontend/lib: .\src\frontend\hooks\useRealtime.ts
+* @backend/domain: .\src\frontend\hooks\useRealtime.ts
+* @frontend/contexts: .\src\frontend\hooks\useRoleRedirect.ts
+* @frontend/components: .\src\frontend\components\workout\QuickActionModal.tsx
+* @frontend/hooks: .\src\frontend\components\layout\NotificationBell.tsx
+* @backend/infrastructure: .\src\app\api\coaches\route.ts
