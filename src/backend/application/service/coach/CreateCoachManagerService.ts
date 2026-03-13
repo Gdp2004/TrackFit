@@ -1,4 +1,4 @@
-﻿// ============================================================
+// ============================================================
 // CreateCoachManagerService
 // Application layer – implements CoachManagementPort
 // Fixes: R1 (corretta guardia 48h), R2 (email post-modifica)
@@ -84,7 +84,12 @@ export class CreateCoachManagerService implements CoachManagementPort {
     // ─── Notifica il coach in tempo reale ──────────────────────────────────────
     // La pagina /coaches/piani ascolta il canale broadcast del coach e ricarica
     // automaticamente la lista prenotazioni senza che il coach debba fare refresh.
-    const atleta = await this.userRepo.findById(userid).catch(() => null);
+    let atleta = null;
+    try {
+      atleta = await this.userRepo.findById(userid);
+    } catch {
+      // ignore
+    }
     const atletaNome = atleta ? `${atleta.nome} ${atleta.cognome}` : "Un atleta";
     this.notificationService.inviaNotificaRealtime(coach.userid, {
       titolo: "📅 Nuova prenotazione ricevuta",
