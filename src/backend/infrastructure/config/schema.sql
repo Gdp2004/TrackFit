@@ -278,6 +278,40 @@ CREATE POLICY "Abbonamenti service write" ON abbonamenti FOR ALL USING (auth.rol
 -- Recensioni: tutti leggono, utenti inseriscono le proprie
 CREATE POLICY "Recensioni public read" ON recensioni FOR SELECT USING (true);
 CREATE POLICY "Recensioni users insert" ON recensioni FOR INSERT WITH CHECK (auth.uid() = userid);
+CREATE POLICY "Recensioni update own" ON recensioni FOR UPDATE USING (auth.uid() = userid OR auth.uid() = coachid OR auth.role() = 'service_role');
+CREATE POLICY "Recensioni delete own" ON recensioni FOR DELETE USING (auth.uid() = userid OR auth.role() = 'service_role');
+
+-- Audit Log (Accessibile in lettura a chi lo genera o service, scrittura da service o admin)
+ALTER TABLE audit_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "AuditLog read own" ON audit_log FOR SELECT USING (auth.uid() = attoreid OR auth.role() = 'service_role');
+CREATE POLICY "AuditLog insert own" ON audit_log FOR INSERT WITH CHECK (auth.uid() = attoreid OR auth.role() = 'service_role');
+
+-- Coupon (Leggibili da tutti per utilizzo, modifica dal service_role o gestore)
+ALTER TABLE coupon ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Coupon public read" ON coupon FOR SELECT USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+CREATE POLICY "Coupon service all" ON coupon FOR ALL USING (auth.role() = 'service_role');
+
+-- Lista attesa
+ALTER TABLE lista_attesa ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "ListaAttesa read own" ON lista_attesa FOR SELECT USING (auth.uid() = userid OR auth.role() = 'service_role');
+CREATE POLICY "ListaAttesa insert own" ON lista_attesa FOR INSERT WITH CHECK (auth.uid() = userid);
+CREATE POLICY "ListaAttesa delete own" ON lista_attesa FOR DELETE USING (auth.uid() = userid OR auth.role() = 'service_role');
+
+-- Pagamenti
+ALTER TABLE pagamenti ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Pagamenti read own" ON pagamenti FOR SELECT USING (auth.uid() = userid OR auth.role() = 'service_role');
+CREATE POLICY "Pagamenti insert own" ON pagamenti FOR INSERT WITH CHECK (auth.uid() = userid);
+CREATE POLICY "Pagamenti update service" ON pagamenti FOR UPDATE USING (auth.role() = 'service_role');
+
+-- Reports
+ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Reports read own" ON reports FOR SELECT USING (auth.uid() = userid OR auth.role() = 'service_role');
+CREATE POLICY "Reports service write" ON reports FOR ALL USING (auth.role() = 'service_role');
+
+-- Storico uso coupon
+ALTER TABLE storico_uso_coupon ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "StoricoCoupon read own" ON storico_uso_coupon FOR SELECT USING (auth.uid() = userid OR auth.role() = 'service_role');
+CREATE POLICY "StoricoCoupon insert own" ON storico_uso_coupon FOR INSERT WITH CHECK (auth.uid() = userid OR auth.role() = 'service_role');
 
 -- ============================================================
 -- 4. Funzioni RPC ed Estensioni (Ottimizzazione & Concorrenza)
